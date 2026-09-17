@@ -1,5 +1,14 @@
 # Änderungen
 
+## 1.0.2 – 17.09.2026
+
+* **Bereichsnamen kamen verstümmelt an** – aus „Küche" wurde „KÃ¼che".
+  Die Template-Schnittstelle von Home Assistant liefert `text/plain` ohne
+  Zeichensatz, und `requests` fällt dann auf ISO-8859-1 zurück. Das Add-on
+  entschlüsselt jetzt selbst als UTF-8. Aufgefallen ist es erst auf der
+  echten Anlage, weil der Ort in der Sprachansage steht: Ein Lautsprecher
+  hätte „In KÃ¼che wurde Rauch erkannt" vorgelesen.
+
 ## 1.0.1 – 17.09.2026
 
 Nachbesserung aus dem ersten echten Aufbau.

@@ -217,7 +217,11 @@ def bereiche() -> dict:
         log.warning("Bereiche nicht lesbar: %s", err)
         return {}
     out = {}
-    for zeile in antwort.text.splitlines():
+    # Selbst entschlüsseln statt .text: Die Template-Schnittstelle liefert
+    # text/plain ohne Zeichensatz, und requests fällt dann auf ISO-8859-1
+    # zurück. Aus "Küche" würde "KÃ¼che" - und genau das läse hinterher
+    # ein Lautsprecher vor.
+    for zeile in antwort.content.decode("utf-8", "replace").splitlines():
         if "|" in zeile:
             eid, bereich = zeile.split("|", 1)
             out[eid.strip()] = bereich.strip()
