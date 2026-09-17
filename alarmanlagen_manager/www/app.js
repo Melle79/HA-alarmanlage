@@ -280,7 +280,7 @@ function melderZeichnen() {
     }));
 
     const linien = {};
-    for (const [schluessel, linie] of Object.entries(Z.konfig.linien)) {
+    for (const [schluessel, linie] of linienNachOrdnung()) {
       linien[schluessel] = linie.name;
     }
     felder.appendChild(wahlfeld('Linie', m.linie, linien, (wert) => {
@@ -476,10 +476,13 @@ function modiZeichnen() {
   }
 }
 
+const linienNachOrdnung = () => Object.entries(Z.konfig.linien)
+  .sort((a, b) => (a[1].reihenfolge || 99) - (b[1].reihenfolge || 99));
+
 function linienZeichnen() {
   const liste = $('linien-liste');
   liste.textContent = '';
-  for (const [schluessel, linie] of Object.entries(Z.konfig.linien)) {
+  for (const [schluessel, linie] of linienNachOrdnung()) {
     const kasten = el('div', 'melder' + (linie.aktiv ? '' : ' aus'));
     const kopf = el('div', 'melder-kopf');
     kopf.appendChild(el('div', 'name', linie.name));
@@ -745,48 +748,197 @@ const STUFENTEXT = {
     + 'Push offen, ob jemand reagiert hat oder ob die Meldung ausgelaufen ist.'],
 };
 
+/* Die Reihenfolge der Stufen steht hier und nirgends sonst.
+ *
+ * Sie aus der Schlüsselfolge des JSON zu lesen, ging schief: Flask sortiert
+ * die Schlüssel alphabetisch, und damit stand der Voralarm plötzlich hinter
+ * der Entwarnung - also hinter dem, was er ankündigt. Reihenfolge ist eine
+ * Aussage und gehört ausgeschrieben. */
+const STUFEN_ORDNUNG = ['voralarm', 'alarm', 'entwarnung'];
+
+const nachOrdnung = (liste, ordnung) => liste.sort((a, b) => {
+  const ia = ordnung.indexOf(a[0]);
+  const ib = ordnung.indexOf(b[0]);
+  return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+});
+
+/* Ab wie vielen Einträgen eine Suche eingeblendet wird. Bei sieben
+ * Telefonen braucht es keine; bei hundertfünfzig Lampen ist die Liste ohne
+ * sie unbrauchbar. */
+const SUCHE_AB = 10;
+
 function meldewegeZeichnen() {
   const liste = $('meldewege-liste');
   liste.textContent = '';
-  for (const [linieSchluessel, linie] of Object.entries(Z.konfig.linien)) {
+  for (const [linieSchluessel, linie] of linienNachOrdnung()) {
     if (!linie.aktiv) continue;
     const karte = el('div', 'karte');
     karte.appendChild(el('h2', null, linie.name));
     const stufen = Z.konfig.eskalation[linieSchluessel] || {};
-    for (const [stufeSchluessel, stufe] of Object.entries(stufen)) {
+    for (const [stufeSchluessel, stufe] of
+      nachOrdnung(Object.entries(stufen), STUFEN_ORDNUNG)) {
       karte.appendChild(stufeZeichnen(linieSchluessel, stufeSchluessel, stufe));
     }
     liste.appendChild(karte);
   }
 }
 
+/* Eine Auswahl aus vielen Einträgen als eigene, zugeklappte Karte.
+ *
+ * Zugeklappt steht dort, was gewählt ist – das ist die Frage, die man beim
+ * Draufsehen hat. Die vollständige Liste kommt erst auf Verlangen, mit
+ * Suche und dem Gewählten obenan. Vorher standen hier hundertfünfzig
+ * Lampen am Stück, und die zwei angehakten lagen irgendwo dazwischen. */
+function auswahlKarte(einstellungen) {
+  const { titel, alle, gewaehlt, beiAenderung, leerText, nachtrag } = einstellungen;
+  const drin = new Set(gewaehlt || []);
+
+  const karte = el('details', 'kanal');
+  const kopf = el('summary', 'kanal-kopf');
+  const links = el('div', 'kanal-titel');
+  links.appendChild(el('strong', null, titel));
+  const stand = el('div', 'kanal-stand');
+  links.appendChild(stand);
+  kopf.appendChild(links);
+  const zahl = el('span', 'kanal-zahl');
+  kopf.appendChild(zahl);
+  karte.appendChild(kopf);
+
+  const koerper = el('div', 'kanal-koerper');
+  karte.appendChild(koerper);
+
+  /* Die Einträge, die es gar nicht (mehr) gibt, müssen trotzdem auftauchen:
+   * Sonst verschwindet eine Zuordnung stillschweigend, weil ein Gerät
+   * gerade nicht erreichbar ist. */
+  const vollstaendig = [...(alle || [])];
+  for (const id of drin) {
+    if (!vollstaendig.some((e) => e.entity_id === id)) {
+      vollstaendig.push({ entity_id: id, name: id, fehlt: true });
+    }
+  }
+
+  const namen = new Map(vollstaendig.map((e) => [e.entity_id, e.name]));
+
+  function standZeichnen() {
+    zahl.textContent = drin.size ? `${drin.size} von ${vollstaendig.length}`
+      : 'keine';
+    zahl.className = 'kanal-zahl' + (drin.size ? ' an' : '');
+    if (!drin.size) {
+      stand.textContent = leerText || 'nichts ausgewählt';
+      stand.classList.add('leise');
+      return;
+    }
+    stand.classList.remove('leise');
+    const gezeigt = [...drin].slice(0, 3).map((id) => namen.get(id) || id);
+    stand.textContent = gezeigt.join(', ')
+      + (drin.size > 3 ? ` und ${drin.size - 3} weitere` : '');
+  }
+
+  const suchfeld = el('input', 'kanal-suche');
+  suchfeld.type = 'search';
+  suchfeld.placeholder = 'Suchen …';
+  if (vollstaendig.length >= SUCHE_AB) koerper.appendChild(suchfeld);
+
+  const listenkasten = el('div', 'kanal-liste');
+  koerper.appendChild(listenkasten);
+
+  function listeZeichnen() {
+    const suche = suchfeld.value.trim().toLowerCase();
+    /* Sortiert wird nur beim Neuzeichnen, nicht bei jedem Haken: Sonst
+     * springt der eben angeklickte Eintrag unter der Maus weg. */
+    const sortiert = [...vollstaendig].sort((a, b) => {
+      const da = drin.has(a.entity_id) ? 0 : 1;
+      const db = drin.has(b.entity_id) ? 0 : 1;
+      if (da !== db) return da - db;
+      return (a.name || '').localeCompare(b.name || '', 'de');
+    });
+
+    listenkasten.textContent = '';
+    let gezeigt = 0;
+    for (const eintrag of sortiert) {
+      const bereich = Z.auswahl?.bereiche?.[eintrag.entity_id] || '';
+      if (suche && !`${eintrag.name} ${eintrag.entity_id} ${bereich}`
+        .toLowerCase().includes(suche)) continue;
+      gezeigt++;
+
+      const label = el('label', 'kanal-zeile');
+      const kasten = el('input');
+      kasten.type = 'checkbox';
+      kasten.checked = drin.has(eintrag.entity_id);
+      kasten.onchange = () => {
+        if (kasten.checked) drin.add(eintrag.entity_id);
+        else drin.delete(eintrag.entity_id);
+        label.classList.toggle('an', kasten.checked);
+        standZeichnen();
+        beiAenderung([...drin]);
+      };
+      label.classList.toggle('an', kasten.checked);
+      label.appendChild(kasten);
+
+      const text = el('div', 'kanal-text');
+      text.appendChild(el('div', 'kanal-name',
+        eintrag.name + (eintrag.fehlt ? ' (fehlt gerade)' : '')));
+      const unten = el('div', 'kanal-eid', eintrag.entity_id);
+      text.appendChild(unten);
+      label.appendChild(text);
+
+      if (bereich) label.appendChild(el('span', 'kanal-bereich', bereich));
+      listenkasten.appendChild(label);
+    }
+    if (!gezeigt) listenkasten.appendChild(el('div', 'leer', 'Nichts gefunden.'));
+  }
+
+  suchfeld.oninput = listeZeichnen;
+  /* Erst zeichnen, wenn jemand aufklappt. Bei vier Kanälen mal drei Stufen
+   * mal drei Linien wären das sonst ein paar tausend Kästchen beim Laden. */
+  karte.addEventListener('toggle', () => {
+    if (karte.open && !listenkasten.hasChildNodes()) listeZeichnen();
+  });
+
+  if (nachtrag) koerper.appendChild(nachtrag);
+  standZeichnen();
+  return karte;
+}
+
 function stufeZeichnen(linieSchluessel, stufeSchluessel, stufe) {
   const [titel, hilfe] = STUFENTEXT[stufeSchluessel] || [stufeSchluessel, ''];
-  const kasten = el('div', 'stufe');
+  const kasten = el('details', 'stufe');
+  kasten.open = stufeSchluessel === 'alarm';
 
-  const kopf = el('div', 'stufe-kopf');
+  const kopf = el('summary', 'stufe-kopf');
   const links = el('div');
-  links.appendChild(el('strong', null, titel));
+  const zeile = el('div', 'stufe-name');
+  zeile.appendChild(el('strong', null, titel));
+  const marke = el('span', 'marke ' + (stufe.aktiv !== false ? 'gut' : ''));
+  marke.textContent = stufe.aktiv !== false ? 'aktiv' : 'aus';
+  zeile.appendChild(marke);
+  if (stufe.kritisch) zeile.appendChild(el('span', 'marke warn', 'kritisch'));
+  links.appendChild(zeile);
   links.appendChild(el('div', 'hilfe', hilfe));
   kopf.appendChild(links);
+  kasten.appendChild(kopf);
 
-  const rechts = el('div', 'zeile');
-  rechts.style.margin = '0';
-  const an = el('label');
-  an.style.cssText = 'display:flex;gap:6px;color:var(--text)';
+  const koerper = el('div', 'stufe-koerper');
+
+  const werkzeuge = el('div', 'zeile');
+  const an = el('label', 'kanal-an');
   const anKasten = el('input');
   anKasten.type = 'checkbox';
   anKasten.checked = stufe.aktiv !== false;
-  anKasten.onchange = () => aendern(linieSchluessel, stufeSchluessel,
-    { aktiv: anKasten.checked });
+  anKasten.onchange = () => {
+    aendern(linieSchluessel, stufeSchluessel, { aktiv: anKasten.checked });
+    marke.textContent = anKasten.checked ? 'aktiv' : 'aus';
+    marke.className = 'marke ' + (anKasten.checked ? 'gut' : '');
+  };
   an.appendChild(anKasten);
-  an.appendChild(el('span', null, 'aktiv'));
-  rechts.appendChild(an);
+  an.appendChild(el('span', null, 'Diese Stufe meldet'));
+  werkzeuge.appendChild(an);
 
   const probe = el('button', 'knopf klein leise', 'Einmal auslösen');
   probe.title = 'Schickt diese Stufe jetzt ab – so lässt sich prüfen, ob der '
     + 'kritische Push wirklich durch den Fokusmodus kommt.';
-  probe.onclick = async () => {
+  probe.onclick = async (ereignis) => {
+    ereignis.preventDefault();
     const antwort = await schicke('api/probe',
       { linie: linieSchluessel, stufe: stufeSchluessel });
     tost(antwort.getan?.unterdrueckt
@@ -794,85 +946,94 @@ function stufeZeichnen(linieSchluessel, stufeSchluessel, stufe) {
       : `Abgeschickt: ${antwort.getan.push.length} Push, `
         + `${antwort.getan.sprache.length} Ansagen.`);
   };
-  rechts.appendChild(probe);
-  kopf.appendChild(rechts);
-  kasten.appendChild(kopf);
+  werkzeuge.appendChild(probe);
+  koerper.appendChild(werkzeuge);
 
-  const spalten = el('div', 'stufe-spalten');
+  const kanaele = el('div', 'kanaele');
 
-  /* kaestchen() leert seinen Kasten, bevor es zeichnet. Jede Liste bekommt
-     deshalb einen eigenen - sonst löscht sie die Überschrift darüber und,
-     wo zwei Listen nebeneinander stehen, gleich die erste mit. */
-  const gruppe = (ueberschrift, eltern) => {
-    eltern.appendChild(el('h3', null, ueberschrift));
-    const kasten = el('div');
-    eltern.appendChild(kasten);
-    return kasten;
-  };
-
-  const push = el('div');
-  kaestchen(gruppe('Push aufs Telefon', push),
-    (Z.auswahl?.meldewege?.push || []).map((d) =>
-      ({ entity_id: d.dienst, name: d.name })), stufe.push || [], (auswahl) =>
-    aendern(linieSchluessel, stufeSchluessel, { push: auswahl }));
-  const kritisch = el('label', 'schalterzeile');
+  /* Push – mit dem kritischen Schalter darin, weil er nur dort gilt. */
+  const kritisch = el('label', 'kanal-an abgesetzt');
   const kritischKasten = el('input');
   kritischKasten.type = 'checkbox';
   kritischKasten.checked = !!stufe.kritisch;
-  kritischKasten.onchange = () => aendern(linieSchluessel, stufeSchluessel,
-    { kritisch: kritischKasten.checked });
+  kritischKasten.onchange = () => {
+    aendern(linieSchluessel, stufeSchluessel, { kritisch: kritischKasten.checked });
+    meldewegeZeichnen();
+  };
   kritisch.appendChild(kritischKasten);
   const kritischText = el('span');
   kritischText.appendChild(el('strong', null, 'Kritischer Push'));
   kritischText.appendChild(el('small', null,
-    'Durchbricht den Fokusmodus. Für den Ernstfall gedacht, nicht für '
-    + 'Hinweise.'));
+    'Durchbricht den Fokusmodus. Für den Ernstfall gedacht, nicht für Hinweise.'));
   kritisch.appendChild(kritischText);
-  push.appendChild(kritisch);
-  spalten.appendChild(push);
 
-  const sprache = el('div');
-  kaestchen(gruppe('Ansage über Lautsprecher', sprache),
-    (Z.auswahl?.meldewege?.sprache || []).map((d) =>
-      ({ entity_id: d.dienst, name: d.name })), stufe.alexa || [], (auswahl) =>
-    aendern(linieSchluessel, stufeSchluessel, { alexa: auswahl }));
-  spalten.appendChild(sprache);
+  kanaele.appendChild(auswahlKarte({
+    titel: 'Push aufs Telefon',
+    alle: (Z.auswahl?.meldewege?.push || []).map((d) =>
+      ({ entity_id: d.dienst, name: d.name })),
+    gewaehlt: stufe.push || [],
+    leerText: 'niemand bekommt einen Push',
+    nachtrag: kritisch,
+    beiAenderung: (auswahl) =>
+      aendern(linieSchluessel, stufeSchluessel, { push: auswahl }),
+  }));
 
-  const licht = el('div');
-  kaestchen(gruppe('Licht', licht), Z.auswahl?.lichter || [],
-    stufe.licht || [], (auswahl) =>
-    aendern(linieSchluessel, stufeSchluessel, { licht: auswahl }));
-  const farbe = el('label');
-  farbe.appendChild(document.createTextNode('Farbe'));
+  kanaele.appendChild(auswahlKarte({
+    titel: 'Ansage über Lautsprecher',
+    alle: (Z.auswahl?.meldewege?.sprache || []).map((d) =>
+      ({ entity_id: d.dienst, name: d.name })),
+    gewaehlt: stufe.alexa || [],
+    leerText: 'keine Ansage',
+    beiAenderung: (auswahl) =>
+      aendern(linieSchluessel, stufeSchluessel, { alexa: auswahl }),
+  }));
+
+  const farbe = el('label', 'kanal-farbe');
+  farbe.appendChild(el('span', null, 'Farbe, solange die Stufe läuft'));
   const farbfeld = el('input');
   farbfeld.type = 'color';
   farbfeld.value = rgbZuHex(stufe.licht_farbe || [255, 0, 0]);
   farbfeld.onchange = () => aendern(linieSchluessel, stufeSchluessel,
     { licht_farbe: hexZuRgb(farbfeld.value) });
   farbe.appendChild(farbfeld);
-  licht.appendChild(farbe);
-  kaestchen(gruppe('Sirene oder Steckdose', licht), Z.auswahl?.schalter || [],
-    stufe.schalter || [], (auswahl) =>
-    aendern(linieSchluessel, stufeSchluessel, { schalter: auswahl }));
-  spalten.appendChild(licht);
 
-  kasten.appendChild(spalten);
+  kanaele.appendChild(auswahlKarte({
+    titel: 'Licht',
+    alle: Z.auswahl?.lichter || [],
+    gewaehlt: stufe.licht || [],
+    leerText: 'kein Licht',
+    nachtrag: farbe,
+    beiAenderung: (auswahl) =>
+      aendern(linieSchluessel, stufeSchluessel, { licht: auswahl }),
+  }));
 
+  kanaele.appendChild(auswahlKarte({
+    titel: 'Sirene oder Steckdose',
+    alle: Z.auswahl?.schalter || [],
+    gewaehlt: stufe.schalter || [],
+    leerText: 'nichts wird geschaltet',
+    beiAenderung: (auswahl) =>
+      aendern(linieSchluessel, stufeSchluessel, { schalter: auswahl }),
+  }));
+
+  koerper.appendChild(kanaele);
+
+  /* Text und Meldung in Home Assistant – gehören zur Stufe, nicht zu einem
+   * Kanal. */
+  const feinheiten = el('div', 'stufe-feinheiten');
   const text = el('label');
-  text.style.marginTop = '12px';
   text.appendChild(document.createTextNode(
     'Eigener Text (leer = vorgegebener Satz). Platzhalter: {ausloeser} {ort} '
     + '{modus} {rest} {zeit}'));
   const textfeld = el('input');
   textfeld.type = 'text';
-  textfeld.style.width = '100%';
   textfeld.value = stufe.text || '';
   textfeld.onchange = () => aendern(linieSchluessel, stufeSchluessel,
     { text: textfeld.value });
   text.appendChild(textfeld);
-  kasten.appendChild(text);
+  feinheiten.appendChild(text);
 
-  const persistent = el('label', 'schalterzeile');
+  const persistent = el('label', 'kanal-an');
   const persistentKasten = el('input');
   persistentKasten.type = 'checkbox';
   persistentKasten.checked = stufe.persistent !== false;
@@ -884,8 +1045,10 @@ function stufeZeichnen(linieSchluessel, stufeSchluessel, stufe) {
   pText.appendChild(el('small', null,
     'Bleibt stehen, bis jemand sie wegklickt – auch wenn der Push übersehen wurde.'));
   persistent.appendChild(pText);
-  kasten.appendChild(persistent);
+  feinheiten.appendChild(persistent);
 
+  koerper.appendChild(feinheiten);
+  kasten.appendChild(koerper);
   return kasten;
 }
 

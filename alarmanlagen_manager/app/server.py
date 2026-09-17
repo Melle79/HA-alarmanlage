@@ -38,14 +38,27 @@ app = Flask(__name__, static_folder=None)
 
 # ----------------------------------------------------------------- Seiten
 
+def _frisch(antwort):
+    """Immer nachfragen, ob die Datei noch stimmt.
+
+    Ohne das behält der Browser nach einem Update des Add-ons die alte
+    app.js und zeigt tagelang eine Oberfläche, die es nicht mehr gibt –
+    während das Add-on längst etwas anderes tut. ``no-cache`` heißt nicht
+    "nicht speichern", sondern "vor dem Benutzen nachfragen"; über ETag
+    kostet das im Regelfall eine leere Antwort.
+    """
+    antwort.headers["Cache-Control"] = "no-cache"
+    return antwort
+
+
 @app.route("/")
 def index():
-    return send_from_directory(WWW_DIR, "index.html")
+    return _frisch(send_from_directory(WWW_DIR, "index.html"))
 
 
 @app.route("/<path:pfad>")
 def statisch(pfad):
-    return send_from_directory(WWW_DIR, pfad)
+    return _frisch(send_from_directory(WWW_DIR, pfad))
 
 
 # ----------------------------------------------------------------- Status

@@ -1,5 +1,37 @@
 # Änderungen
 
+## 1.1.0 – 17.09.2026
+
+**Die Meldewege sind jetzt Karten.** Vorher standen dort drei endlose
+Spalten Kästchen nebeneinander – bei über hundert Lampen im Haus lagen die
+zwei angehakten irgendwo dazwischen, und eine Stufe war 3000 Pixel hoch.
+
+* Jede Stufe (Voralarm, Alarm, Entwarnung) ist aufklappbar und zeigt
+  zugeklappt, ob sie aktiv und ob sie kritisch ist. Offen ist beim Start
+  nur der Alarm.
+* Jeder Meldeweg darin ist eine eigene, zugeklappte Karte mit der Antwort
+  auf die Frage, die man beim Draufsehen hat: *was ist gewählt*. Also
+  „Isabels Iphone, Svens Iphone" und „2 von 2" statt einer Liste.
+* Aufgeklappt gibt es eine Suche (ab zehn Einträgen), das Gewählte steht
+  obenan, und neben jedem Eintrag steht sein Bereich. Gesucht wird auch im
+  Bereichsnamen – „wohnzimmer" findet die Downlights.
+* Sortiert wird nur beim Aufklappen, nicht bei jedem Haken: Sonst springt
+  der eben angeklickte Eintrag unter der Maus weg.
+* Die Liste wird erst beim Aufklappen gebaut. Sonst entstünden beim Laden
+  der Seite ein paar tausend Kästchen, die niemand sieht.
+
+Weiter:
+
+* **Bereiche gibt es jetzt für alle Domänen**, nicht nur für Melder – dafür
+  mit Zwischenspeicher, weil das Template über einige tausend Entitäten
+  läuft.
+* **Die Reihenfolge der Stufen und Linien steht ausgeschrieben.** Sie aus
+  der Schlüsselfolge des JSON zu lesen ging schief: Flask sortiert
+  alphabetisch, und damit stand der Voralarm hinter der Entwarnung.
+* **Statische Dateien werden nicht mehr blind aus dem Zwischenspeicher
+  bedient.** Ohne das behält der Browser nach einem Update die alte
+  Oberfläche und zeigt tagelang etwas, das es nicht mehr gibt.
+
 ## 1.0.2 – 17.09.2026
 
 * **Bereichsnamen kamen verstümmelt an** – aus „Küche" wurde „KÃ¼che".

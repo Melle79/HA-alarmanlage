@@ -163,6 +163,13 @@ Je Linie drei Stufen: **Voralarm** (während der Eintrittsverzögerung),
 **Alarm**, **Entwarnung**. Jede Stufe kann Push (auch kritisch),
 Sprachausgabe, Licht und Schalter ansprechen.
 
+Jede Stufe ist aufklappbar, und jeder Meldeweg darin ist eine eigene Karte.
+Zugeklappt steht dort, **was gewählt ist** – das ist die Frage, die man beim
+Draufsehen hat. Die volle Liste kommt erst auf Verlangen, mit Suche, dem
+Gewählten obenan und dem Bereich neben jedem Eintrag. Gesucht wird auch im
+Bereichsnamen: „wohnzimmer" findet die Downlights, ohne dass man ihre Namen
+kennt.
+
 **Kritischer Push** durchbricht den Fokusmodus. Eine normale Meldung bleibt
 nachts liegen – genau dann, wenn sie gebraucht wird. Umgekehrt weckt ein
 kritischer Push für einen Hinweis die halbe Familie ohne Anlass. Die

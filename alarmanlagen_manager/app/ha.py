@@ -194,17 +194,33 @@ def _lesbar(name: str) -> str:
     return name.replace("alexa_media_", "").replace("_", " ").strip().title()
 
 
-def bereiche() -> dict:
+# Bereiche ändern sich so gut wie nie, das Template läuft aber über ein
+# paar tausend Entitäten. Einmal je Viertelstunde reicht.
+BEREICHE_TTL = 900
+_bereiche_cache: tuple[float, dict] = (0.0, {})
+
+# Wovon der Bereich gebraucht wird: Melder (für den Ort in der Ansage) und
+# alles, was in den Meldewegen zur Auswahl steht.
+BEREICH_DOMAENEN = ("binary_sensor", "light", "switch", "siren", "lock",
+                    "media_player", "sensor")
+
+
+def bereiche(erzwingen: bool = False) -> dict:
     """entity_id -> Bereichsname, über die Template-Schnittstelle.
 
     Es gibt keine REST-Schnittstelle für das Entitätsregister; das Template
     ist der offizielle Weg dorthin.
     """
+    global _bereiche_cache
+    alter, gespeichert = _bereiche_cache
+    if not erzwingen and gespeichert and time.time() - alter < BEREICHE_TTL:
+        return gespeichert
     if not verfuegbar():
         return {}
+    domaenen = ",".join(f"'{d}'" for d in BEREICH_DOMAENEN)
     vorlage = (
         "{% set ns = namespace(o=[]) %}"
-        "{% for s in states.binary_sensor %}"
+        f"{{% for s in states if s.domain in [{domaenen}] %}}"
         "{% set a = area_name(s.entity_id) %}"
         "{% if a %}{% set ns.o = ns.o + [s.entity_id ~ '|' ~ a] %}{% endif %}"
         "{% endfor %}{{ ns.o | join('\\n') }}"
@@ -225,4 +241,6 @@ def bereiche() -> dict:
         if "|" in zeile:
             eid, bereich = zeile.split("|", 1)
             out[eid.strip()] = bereich.strip()
+    if out:
+        _bereiche_cache = (time.time(), out)
     return out

@@ -71,6 +71,24 @@ class Dauerlinien(AnlagenTest):
         self.assertEqual(self.dienste_mit("notify."), [])
 
 
+class Reihenfolge(AnlagenTest):
+
+    def test_jede_linie_hat_eine_reihenfolge(self):
+        """Die Anzeigereihenfolge darf nicht an der Schlüsselfolge hängen.
+
+        Flask sortiert die JSON-Schlüssel alphabetisch. Wer sich darauf
+        verlässt, bekommt den Voralarm hinter die Entwarnung sortiert –
+        also hinter das, was er ankündigt.
+        """
+        for schluessel, linie in self.store.get("linien").items():
+            self.assertIsInstance(linie.get("reihenfolge"), int, schluessel)
+
+    def test_einbruch_steht_vorn(self):
+        linien = self.store.get("linien")
+        folge = sorted(linien, key=lambda k: linien[k]["reihenfolge"])
+        self.assertEqual(folge[0], "einbruch")
+
+
 class Trockenlauf(AnlagenTest):
 
     def setUp(self):

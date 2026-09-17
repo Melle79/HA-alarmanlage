@@ -359,21 +359,113 @@ label > input, label > select { display: block; margin-top: 4px; }
   color: var(--text-leise);
 }
 
-/* ---------------------------------------------------------- Meldewege */
+/* ---------------------------------------------------------- Meldewege
+
+   Der Aufbau ist zweistufig: Eine Stufe (Voralarm, Alarm, Entwarnung) ist
+   aufklappbar, und darin ist jeder Meldeweg noch einmal eine eigene,
+   zugeklappte Karte. Vorher standen hier hundertfünfzig Lampen am Stück,
+   und die zwei angehakten lagen irgendwo dazwischen. */
 
 .stufe {
   border: 1px solid var(--rand); border-radius: var(--rund);
-  padding: 14px; margin-bottom: 12px; background: var(--flaeche2);
+  margin-bottom: 12px; background: var(--flaeche2);
 }
-.stufe-kopf {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; flex-wrap: wrap;
+.stufe > summary {
+  padding: 14px; cursor: pointer; list-style: none;
+  display: flex; align-items: flex-start; gap: 10px;
 }
-.stufe-kopf strong { font-size: 15px; }
-.stufe-spalten {
+/* Das Dreieck selbst zeichnen: Safari und Chrome setzen es verschieden,
+   und in einem Flexkopf springt es. */
+.stufe > summary::-webkit-details-marker { display: none; }
+.stufe > summary::before {
+  content: '▸'; color: var(--text-leise); flex: 0 0 auto;
+  transition: transform .15s; line-height: 1.6;
+}
+.stufe[open] > summary::before { transform: rotate(90deg); }
+.stufe > summary .hilfe { margin: 2px 0 0; }
+.stufe-name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stufe-name strong { font-size: 15px; }
+.stufe-koerper { padding: 0 14px 14px; }
+.stufe-feinheiten { margin-top: 14px; }
+.stufe-feinheiten input[type=text] { width: 100%; }
+
+.kanaele {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 16px; margin-top: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 10px; margin-top: 4px;
+  align-items: start;
+}
+
+.kanal {
+  border: 1px solid var(--rand); border-radius: 10px;
+  background: var(--flaeche); overflow: hidden;
+}
+.kanal-kopf {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; cursor: pointer; list-style: none;
+}
+.kanal-kopf::-webkit-details-marker { display: none; }
+.kanal-titel { flex: 1 1 auto; min-width: 0; }
+.kanal-titel strong { font-size: 14px; font-weight: 600; }
+.kanal-stand {
+  font-size: 12px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kanal-stand.leise { color: var(--text-leise); font-style: italic; }
+.kanal-zahl {
+  flex: 0 0 auto; font-size: 11px; color: var(--text-leise);
+  background: var(--flaeche2); border-radius: 999px; padding: 3px 9px;
+  white-space: nowrap;
+}
+.kanal-zahl.an {
+  background: var(--akzent); color: #fff;
+}
+.kanal-koerper { padding: 0 12px 12px; }
+.kanal-suche { width: 100%; margin-bottom: 8px; }
+.kanal-liste {
+  max-height: 260px; overflow-y: auto;
+  border: 1px solid var(--rand); border-radius: 8px;
+}
+.kanal-zeile {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 10px; cursor: pointer; color: var(--text);
+  border-bottom: 1px solid var(--rand);
+}
+.kanal-zeile:last-child { border-bottom: 0; }
+.kanal-zeile:hover { background: var(--flaeche2); }
+.kanal-zeile.an { background: var(--flaeche2); }
+.kanal-zeile input { flex: 0 0 auto; margin: 0; }
+.kanal-text { flex: 1 1 auto; min-width: 0; }
+.kanal-name {
+  font-size: 13px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kanal-eid {
+  font-size: 11px; color: var(--text-leise);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.kanal-bereich {
+  flex: 0 0 auto; font-size: 11px; color: var(--text-leise);
+  background: var(--flaeche2); border-radius: 999px; padding: 2px 8px;
+  max-width: 40%; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kanal-an {
+  display: flex; gap: 8px; align-items: flex-start;
+  color: var(--text); font-size: 13px; cursor: pointer;
+}
+.kanal-an input { margin: 3px 0 0; flex: 0 0 auto; }
+.kanal-an small { display: block; color: var(--text-leise); font-size: 12px; }
+.kanal-an.abgesetzt {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rand);
+}
+.kanal-farbe {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--rand); color: var(--text); font-size: 13px;
+}
+.kanal-farbe input[type=color] {
+  width: 46px; height: 28px; padding: 2px; margin: 0; flex: 0 0 auto;
 }
 
 /* --------------------------------------------------------- Protokoll */
@@ -412,11 +504,3 @@ label > input, label > select { display: block; margin-top: 4px; }
 .tost.schlecht { background: var(--schlecht); color: #fff; }
 
 .leer { color: var(--text-leise); font-size: 14px; padding: 12px 0; }
-
-/* Eine Liste aus kaestchen() sitzt in einem eigenen Kasten, damit ihre
-   Überschrift das Neuzeichnen überlebt. */
-.stufe-spalten h3 { margin-top: 14px; }
-.stufe-spalten h3:first-child { margin-top: 0; }
-.stufe-spalten input[type=color] {
-  width: 48px; height: 28px; padding: 2px; margin-top: 4px;
-}

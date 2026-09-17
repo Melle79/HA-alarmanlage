@@ -32,6 +32,7 @@ ZUSTAND_DATEI = DATA_DIR / "zustand.json"
 # Wasser kümmert es nicht, ob jemand zu Hause ist.
 LINIEN_VORGABE = {
     "einbruch": {
+        "reihenfolge": 1,
         "name": "Einbruch",
         "geltung": "scharf",
         "symbol": "mdi:shield-alert",
@@ -41,6 +42,7 @@ LINIEN_VORGABE = {
         "aktiv": True,
     },
     "rauch": {
+        "reihenfolge": 2,
         "name": "Rauch und Feuer",
         "geltung": "immer",
         "symbol": "mdi:smoke-detector-variant-alert",
@@ -48,6 +50,7 @@ LINIEN_VORGABE = {
         "aktiv": True,
     },
     "wasser": {
+        "reihenfolge": 3,
         "name": "Wasser",
         "geltung": "immer",
         "symbol": "mdi:water-alert",
