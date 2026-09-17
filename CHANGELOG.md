@@ -1,5 +1,22 @@
 # Änderungen
 
+## 1.4.0 – 17.09.2026
+
+**Jeder Melder darf einen eigenen Meldetext haben.**
+
+Aufgefallen beim Aufnehmen eines Kohlenmonoxidmelders: Er gehört auf die
+Rauchlinie – dieselbe Gefahr, dieselben Meldewege –, aber „Achtung!
+Wohnzimmer meldet Rauch" wäre dort schlicht falsch. Wer nachts von einem
+kritischen Push geweckt wird, soll erfahren, wonach er sucht.
+
+Der Satz steht am Melder und schlägt den der Stufe. Er gilt für den Alarm,
+nicht für die Entwarnung – „Achtung, Kohlenmonoxid!" taugt nicht als
+Meldung, dass nichts mehr anliegt. Im Feld steht blass, was ohne ihn gesagt
+würde.
+
+Gilt auf jeder Linie: Ein Erschütterungsmelder an der Terrassentür kann so
+„Glasbruch an der Terrassentür" melden statt „Bewegung erkannt".
+
 ## 1.3.0 – 17.09.2026
 
 Nachbesserung am Hinweis „was fehlt hier", der in 1.2.0 dazugekommen ist.

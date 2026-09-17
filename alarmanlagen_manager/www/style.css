@@ -403,6 +403,8 @@ label > input, label > select { display: block; margin-top: 4px; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .melder-koerper { padding: 0 12px 12px; }
+.melder-text { display: block; margin-top: 10px; }
+.melder-text input { width: 100%; }
 .melder-fuss {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px; margin-top: 12px; padding-top: 10px;

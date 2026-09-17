@@ -71,6 +71,64 @@ class Dauerlinien(AnlagenTest):
         self.assertEqual(self.dienste_mit("notify."), [])
 
 
+class EigenerMeldetext(AnlagenTest):
+    """Eine Linie umfasst mehr als eine Gefahr.
+
+    Auf der Rauchlinie hängt auch der Kohlenmonoxidmelder. "meldet Rauch"
+    wäre dort falsch – und wer nachts geweckt wird, soll erfahren, wonach
+    er sucht.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.store.set("eskalation", "rauch", "alarm", "push",
+                       ["notify.mobile_app_test"])
+
+    def test_der_text_des_melders_schlaegt_den_der_stufe(self):
+        self.melder_anlegen("binary_sensor.co", art="rauch", linie="rauch",
+                            ort="Wohnzimmer",
+                            text="Achtung! Im Wohnzimmer wurde "
+                                 "Kohlenmonoxid erkannt.")
+        self.ereignis("binary_sensor.co", "on")
+        nachricht = self.dienste_mit("notify.mobile_app_test")[0][1]["message"]
+        self.assertEqual(nachricht,
+                         "Achtung! Im Wohnzimmer wurde Kohlenmonoxid erkannt.")
+
+    def test_ohne_eigenen_text_gilt_der_der_linie(self):
+        self.melder_anlegen("binary_sensor.rm", art="rauch", linie="rauch",
+                            ort="Waschküche")
+        self.ereignis("binary_sensor.rm", "on")
+        nachricht = self.dienste_mit("notify.mobile_app_test")[0][1]["message"]
+        self.assertIn("Waschküche", nachricht)
+        self.assertIn("Rauch", nachricht)
+
+    def test_die_entwarnung_nimmt_den_eigenen_text_nicht(self):
+        """Der Satz meldet eine Gefahr. Für 'vorbei' taugt er nicht."""
+        self.store.set("eskalation", "rauch", "entwarnung", "aktiv", True)
+        self.store.set("eskalation", "rauch", "entwarnung", "push",
+                       ["notify.mobile_app_test"])
+        self.melder_anlegen("binary_sensor.co", art="rauch", linie="rauch",
+                            ort="Wohnzimmer",
+                            text="Achtung! Kohlenmonoxid!")
+        self.ereignis("binary_sensor.co", "on")
+        self.gerufen.clear()
+        self.ereignis("binary_sensor.co", "off")
+        nachricht = self.dienste_mit("notify.mobile_app_test")[0][1]["message"]
+        self.assertNotIn("Achtung", nachricht)
+        self.assertIn("Wohnzimmer", nachricht)
+
+    def test_auch_auf_der_einbruchlinie(self):
+        self.store.set("eskalation", "einbruch", "alarm", "push",
+                       ["notify.mobile_app_test"])
+        self.melder_anlegen("binary_sensor.glas", art="erschuetterung",
+                            ort="Terrassentür",
+                            text="Glasbruch an der Terrassentür!")
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("binary_sensor.glas", "on")
+        nachricht = self.dienste_mit("notify.mobile_app_test")[0][1]["message"]
+        self.assertEqual(nachricht, "Glasbruch an der Terrassentür!")
+
+
 class Reihenfolge(AnlagenTest):
 
     def test_jede_linie_hat_eine_reihenfolge(self):

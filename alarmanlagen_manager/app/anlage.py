@@ -323,7 +323,8 @@ class Anlage:
         # zweiter Melder angesprochen, und der überschriebe den ersten.
         store.z_set(ausloeser=f"{ort} um {time.strftime('%H:%M:%S')}",
                     ausloeser_zeit=time.time(),
-                    ausloeser_linie=linie_schluessel)
+                    ausloeser_linie=linie_schluessel,
+                    ausloeser_text=melder.get("text", ""))
 
         eintrittszeit = self._modus(store.z_get("modus")).get("eintrittszeit", 45)
         if melder.get("verzoegert", True) and eintrittszeit > 0:
@@ -353,6 +354,8 @@ class Anlage:
         ort = melder.get("ort") or melder.get("name")
         protokoll.schreiben("entwarnung", f"{ort} meldet nichts mehr",
                             melder=melder.get("id"), linie=linie_schluessel)
+        # Der eigene Text gilt nur für den Alarm. Die Entwarnung sagt, dass
+        # nichts mehr anliegt - dafür taugt derselbe Satz nicht.
         eskalation.ausfuehren(linie_schluessel, "entwarnung", ort=ort)
         if not offene:
             eskalation.zuruecknehmen(linie_schluessel, "alarm")
@@ -367,8 +370,10 @@ class Anlage:
         store.z_set(offene_alarme=offene)
         protokoll.schreiben("alarm", f"{linie_schluessel}: {ort}",
                             melder=melder.get("id"), linie=linie_schluessel)
-        eskalation.ausfuehren(linie_schluessel, "alarm", ort=ort,
-                              ausloeser=ort, zeit=time.strftime("%H:%M"))
+        eskalation.ausfuehren(linie_schluessel, "alarm",
+                              text_vorrang=melder.get("text", ""),
+                              ort=ort, ausloeser=ort,
+                              zeit=time.strftime("%H:%M"))
 
     def _unterdrueckung_melden(self, ort: str, grund: str) -> None:
         """Eine unterdrückte Bewegung soll sichtbar bleiben, nicht hörbar.
@@ -412,7 +417,9 @@ class Anlage:
         self._nach("triggered", frist=time.time() + dauer if dauer else None)
         modus = self._modus(store.z_get("modus"))
         eskalation.ausfuehren(linie_schluessel, "alarm",
+                              text_vorrang=store.z_get("ausloeser_text") or "",
                               ausloeser=store.z_get("ausloeser") or "",
+                              ort=store.z_get("ausloeser") or "",
                               modus=modus.get("name", ""),
                               zeit=time.strftime("%H:%M"))
         protokoll.schreiben("alarm", f"Alarm: {store.z_get('ausloeser')}",

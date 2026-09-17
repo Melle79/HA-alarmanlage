@@ -204,6 +204,17 @@ Ernstfall herausfinden.
 Platzhalter im eigenen Text: `{ausloeser}`, `{ort}`, `{modus}`, `{rest}`,
 `{zeit}`.
 
+### Ein Satz für einen einzelnen Melder
+
+Am Melder selbst steht ein **eigener Meldetext**, der den der Stufe
+schlägt. Eine Linie umfasst nämlich mehr als eine Gefahr: Auf der
+Rauchlinie hängt auch der Kohlenmonoxidmelder, und „meldet Rauch" wäre dort
+falsch. Ebenso kann ein Erschütterungsmelder an der Terrassentür
+„Glasbruch an der Terrassentür" melden statt „Bewegung erkannt".
+
+Er gilt für den **Alarm**, nicht für die Entwarnung – ein Satz, der eine
+Gefahr meldet, taugt nicht als Meldung, dass nichts mehr anliegt.
+
 ## Vorprüfung beim Scharfschalten
 
 Was passiert, wenn ein Kontakt offen steht:

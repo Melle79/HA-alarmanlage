@@ -241,6 +241,7 @@ class Store:
                 "ausloeser": None,
                 "ausloeser_zeit": None,
                 "ausloeser_linie": None,
+                "ausloeser_text": None,
                 "letzte_entsperrung": None,
                 "letzte_unterdrueckungsmeldung": None,
                 "ueberbrueckt": [],

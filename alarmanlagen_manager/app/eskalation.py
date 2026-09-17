@@ -52,12 +52,18 @@ def stufe(linie: str, name: str) -> dict:
     return store.get("eskalation", linie, name, default={}) or {}
 
 
-def ausfuehren(linie: str, name: str, **werte) -> dict:
+def ausfuehren(linie: str, name: str, text_vorrang: str = "", **werte) -> dict:
     """Eine Meldestufe auslösen.
 
     ``werte`` füllt die Platzhalter im Text ({ausloeser}, {ort}, {modus},
     {rest}, {zeit}). Gibt zurück, was tatsächlich getan wurde – die
     Oberfläche zeigt das im Protokoll an.
+
+    ``text_vorrang`` ist der Satz eines einzelnen Melders und schlägt den
+    der Stufe. Nötig, weil eine Linie mehr umfasst als eine Gefahr: Auf der
+    Rauchlinie hängt auch der Kohlenmonoxidmelder, und "meldet Rauch" wäre
+    dort schlicht falsch. Wer im Ernstfall geweckt wird, soll erfahren,
+    wonach er sucht.
     """
     konfig = stufe(linie, name)
     getan = {"push": [], "sprache": [], "licht": [], "schalter": [],
@@ -66,7 +72,8 @@ def ausfuehren(linie: str, name: str, **werte) -> dict:
     if not konfig.get("aktiv", True):
         return getan
 
-    text = (konfig.get("text") or VORGABETEXTE.get((linie, name), "{ausloeser}"))
+    text = (text_vorrang or konfig.get("text")
+            or VORGABETEXTE.get((linie, name), "{ausloeser}"))
     titel = TITEL.get((linie, name), "Alarmanlage")
     try:
         text = text.format(**{"ausloeser": "", "ort": "", "modus": "",

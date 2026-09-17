@@ -465,6 +465,20 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
   }));
   koerper.appendChild(felder);
 
+  /* Eigener Satz für genau diesen Melder. Nötig, weil eine Linie mehr
+   * umfasst als eine Gefahr: Auf der Rauchlinie hängt auch der
+   * Kohlenmonoxidmelder, und "meldet Rauch" wäre dort falsch. */
+  const eigenerText = el('label', 'melder-text');
+  eigenerText.appendChild(document.createTextNode(
+    'Eigener Meldetext (leer = der Satz der Linie). Platzhalter: {ort} {zeit}'));
+  const textfeldEigen = el('input');
+  textfeldEigen.type = 'text';
+  textfeldEigen.placeholder = vorgabetext(m);
+  textfeldEigen.value = m.text || '';
+  textfeldEigen.oninput = () => { m.text = textfeldEigen.value; melderSpeichern(); };
+  eigenerText.appendChild(textfeldEigen);
+  koerper.appendChild(eigenerText);
+
   if (linie?.geltung === 'scharf') {
     const wahl = el('div', 'modiwahl');
     wahl.appendChild(el('span', null, 'Gilt in:'));
@@ -528,6 +542,19 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
 
   karte.appendChild(koerper);
   return karte;
+}
+
+/* Was ohne eigenen Text gesagt würde – als blasse Vorgabe im Feld, damit
+ * sichtbar ist, wogegen man schreibt. */
+function vorgabetext(m) {
+  const stufe = Z.konfig.eskalation?.[m.linie]?.alarm;
+  const vorlage = stufe?.text || {
+    einbruch: 'Bewegung erkannt: {ausloeser}. Modus: {modus}.',
+    rauch: 'Achtung! {ort} meldet Rauch.',
+    wasser: 'Achtung! {ort} meldet Wasser.',
+  }[m.linie] || '';
+  return vorlage.replace('{ort}', m.ort || m.name || '')
+    .replace('{ausloeser}', m.ort || m.name || '');
 }
 
 function kurzAktualisieren(kopf, m) {
