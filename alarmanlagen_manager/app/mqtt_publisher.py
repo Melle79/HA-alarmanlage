@@ -5,11 +5,19 @@ zu verlassen, die jemand von Hand angelegt hat. Bei einer Neuinstallation
 gibt es die nämlich nicht, und ein Bedienfeld, das auf eine fehlende
 Entität zeigt, schaltet nie.
 
-Eine Regel, die hier teuer erkauft wurde und überall gilt: **Die
-entity_id wird nie aus einem Namen zurückgerechnet.** Sie entsteht einmal
-beim Anlegen und folgt keiner Umbenennung. Deshalb steht in jeder
-Ankündigung ein festes ``object_id``, und die Modusnamen tauchen nur als
-Anzeigetext auf, nie in einer ID.
+Zwei Regeln zur entity_id, beide am echten Aufbau bezahlt:
+
+1. **Sie wird nie aus einem Namen zurückgerechnet.** Sie entsteht einmal
+   beim Anlegen und folgt keiner Umbenennung. Modusnamen tauchen deshalb
+   nur als Anzeigetext auf, nie in einer ID.
+2. **``object_id`` ist ein Wunsch, kein Befehl.** Home Assistant bildet die
+   entity_id aus *Gerätename + Entitätsname* und ignoriert ``object_id``
+   dabei. Wer eine bestimmte ID will, muss den Namen danach wählen - und
+   damit rechnen, dass ein Zusammenstoß mit einer vorhandenen Entität ein
+   ``_2`` anhängt. Genau das ist beim ersten Aufbau passiert: Neben dem
+   alten YAML-Bedienfeld ``alarm_control_panel.alarmanlage`` wurde aus
+   diesem hier ``..._2``. Deshalb heißt die Entität jetzt ausdrücklich
+   "Bedienfeld".
 
 Am Bedienfeld hängen alle Angaben als Attribute (``json_attributes_topic``).
 Das ist Absicht: Die Dashboard-Karte kommt an den Ingress-Zugang nicht
@@ -152,6 +160,16 @@ class MqttPublisher:
         self.client.publish(thema, json.dumps(inhalt, ensure_ascii=False),
                             retain=True)
 
+    def _config_leeren(self, komponente: str, object_id: str) -> None:
+        """Eine Ankündigung zurücknehmen – Home Assistant räumt die Entität
+        danach ab. Eine leere Nutzlast auf demselben Thema, sonst bliebe
+        die alte Ankündigung als retained Nachricht liegen."""
+        if not self.client:
+            return
+        self.client.publish(
+            f"{DISCOVERY_PREFIX}/{komponente}/{object_id}/config", "",
+            retain=True)
+
     def ankuendigen(self, erzwingen: bool = False) -> None:
         """Alle Entitäten anmelden. Mehrfach aufrufen ist harmlos."""
         if not self.client or not self.connected:
@@ -172,10 +190,17 @@ class MqttPublisher:
             for _, m in aktive
         } - {""})
 
-        self._config("alarm_control_panel", f"{p}_panel", {
-            "unique_id": f"{p}_panel",
-            "object_id": p,
-            "name": None,  # None = der Gerätename trägt die Entität
+        # Einmalige Bereinigung: Die erste Fassung meldete das Bedienfeld
+        # ohne eigenen Namen an und stieß dadurch mit einem vorhandenen
+        # YAML-Bedienfeld zusammen. Die leere Nutzlast nimmt die alte
+        # Ankündigung zurück, damit die "_2"-Entität verschwindet, statt
+        # als Leiche stehen zu bleiben.
+        self._config_leeren("alarm_control_panel", f"{p}_panel")
+
+        self._config("alarm_control_panel", f"{p}_bedienfeld", {
+            "unique_id": f"{p}_bedienfeld",
+            "object_id": f"{p}_bedienfeld",
+            "name": "Bedienfeld",
             "state_topic": f"{p}/panel",
             "command_topic": f"{p}/panel/set",
             "json_attributes_topic": f"{p}/attribute",

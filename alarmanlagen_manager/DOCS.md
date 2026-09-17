@@ -68,16 +68,22 @@ einen Kunstgriff.
 
 | Entität | Wofür |
 | --- | --- |
-| `alarm_control_panel.alarmanlage` | Das Bedienfeld. Trägt alle Angaben als Attribute. |
+| `alarm_control_panel.alarmanlage_bedienfeld` | Das Bedienfeld. Trägt alle Angaben als Attribute. |
 | `select.alarmanlage_hausmodus` | Der Sollzustand, auch für Automationen und Sprache. |
 | `switch.alarmanlage_automatik` | Automatische Scharfschaltung an/aus. |
 | `switch.alarmanlage_trockenlauf` | Probebetrieb an/aus. |
-| `sensor.alarmanlage_ausloeser` | Wer zuletzt angesprochen hat. |
-| `sensor.alarmanlage_seit` | Seit wann der Zustand gilt. |
+| `sensor.alarmanlage_letzter_ausloser` | Wer zuletzt angesprochen hat. |
+| `sensor.alarmanlage_zustand_seit` | Seit wann der Zustand gilt. |
 | `binary_sensor.alarmanlage_rauch` | Rauchlinie, rund um die Uhr. |
 | `binary_sensor.alarmanlage_wasser` | Wasserlinie, rund um die Uhr. |
-| `binary_sensor.alarmanlage_offen` | Offene Kontakte. |
-| `button.alarmanlage_quittieren` | Offene Dauerlinien-Alarme schließen. |
+| `binary_sensor.alarmanlage_offene_kontakte` | Offene Kontakte. |
+| `button.alarmanlage_alarme_quittieren` | Offene Dauerlinien-Alarme schließen. |
+
+Das Bedienfeld heißt ausdrücklich *Bedienfeld*, damit es nicht mit einem
+vorhandenen `alarm_control_panel.alarmanlage` aus `configuration.yaml`
+zusammenstößt. Home Assistant bildet die entity_id nämlich aus Geräte- und
+Entitätsname; bei einem Zusammenstoß hängt es wortlos ein `_2` an, und das
+bliebe für immer stehen.
 
 `sensor.alarmanlage_seit` gibt es, weil `last_changed` bei jedem Neustart
 von Home Assistant auf die Startzeit springt. Ohne eigenen Zeitstempel
@@ -91,7 +97,7 @@ Lovelace-Ressource ein. Kein HACS nötig.
 
 ```yaml
 type: custom:alarmanlage-card
-entity: alarm_control_panel.alarmanlage
+entity: alarm_control_panel.alarmanlage_bedienfeld
 titel: Alarmanlage
 textgroesse: gross   # klein | normal | gross | riesig oder eine Zahl
 knoepfe: true

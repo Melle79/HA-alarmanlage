@@ -46,14 +46,14 @@ class Discovery(AnlagenTest):
         self.publisher.ankuendigen(erzwingen=True)
 
     def test_das_bedienfeld_wird_angemeldet(self):
-        panel = self.client.konfig("alarmanlage_panel")
+        panel = self.client.konfig("alarmanlage_bedienfeld")
         self.assertEqual(panel["state_topic"], "alarmanlage/panel")
         self.assertEqual(panel["command_topic"], "alarmanlage/panel/set")
         self.assertFalse(panel["code_arm_required"])
 
     def test_nur_benutzte_modi_stehen_am_bedienfeld(self):
         """Ein Knopf für einen Modus, den es nicht gibt, ist eine Lüge."""
-        panel = self.client.konfig("alarmanlage_panel")
+        panel = self.client.konfig("alarmanlage_bedienfeld")
         self.assertIn("arm_away", panel["supported_features"])
         self.assertIn("arm_vacation", panel["supported_features"])
         self.assertNotIn("arm_night", panel["supported_features"])
@@ -62,7 +62,7 @@ class Discovery(AnlagenTest):
         self.store.set("modi", "nacht", "aktiv", True)
         self.client.nachrichten.clear()
         self.publisher.erneut_ankuendigen()
-        panel = self.client.konfig("alarmanlage_panel")
+        panel = self.client.konfig("alarmanlage_bedienfeld")
         self.assertIn("arm_night", panel["supported_features"])
 
     def test_die_ids_haengen_nicht_am_namen(self):
@@ -89,9 +89,22 @@ class Discovery(AnlagenTest):
         """Der Unterschied zwischen 'scharf' und 'weiß es nicht mehr' ist
         bei einer Alarmanlage der ganze Punkt."""
         for thema, nutzlast, _ in self.client.nachrichten:
-            if not thema.endswith("/config"):
+            if not thema.endswith("/config") or not nutzlast:
                 continue
             self.assertIn("availability_topic", json.loads(nutzlast), thema)
+
+    def test_das_bedienfeld_traegt_einen_eigenen_namen(self):
+        """Ohne ihn erbt es den Gerätenamen und stößt mit einem
+        vorhandenen alarm_control_panel.alarmanlage zusammen. Home
+        Assistant hängt dann wortlos ein '_2' an - für immer."""
+        panel = self.client.konfig("alarmanlage_bedienfeld")
+        self.assertEqual(panel["name"], "Bedienfeld")
+
+    def test_die_alte_ankuendigung_wird_zurueckgenommen(self):
+        """Sonst bliebe die '_2'-Entität aus der ersten Fassung stehen."""
+        leer = [(t, n) for t, n, _ in self.client.nachrichten
+                if t.endswith("alarmanlage_panel/config") and n == ""]
+        self.assertEqual(len(leer), 1)
 
     def test_der_zustand_geht_als_attribute_mit(self):
         self.publisher.veroeffentlichen(self.anlage.zustand())

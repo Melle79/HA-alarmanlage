@@ -43,7 +43,7 @@ class AlarmanlageCard extends HTMLElement {
 
   setConfig(konfig) {
     this._konfig = {
-      entity: konfig.entity || 'alarm_control_panel.alarmanlage',
+      entity: konfig.entity || 'alarm_control_panel.alarmanlage_bedienfeld',
       hausmodus_entity: konfig.hausmodus_entity || 'select.alarmanlage_hausmodus',
       titel: konfig.titel ?? konfig.title ?? 'Alarmanlage',
       /* Vorgabe gross, weil die Karte auch am Wandtablett im Flur hängt und
@@ -72,7 +72,7 @@ class AlarmanlageCard extends HTMLElement {
   getCardSize() { return 4; }
 
   static getStubConfig() {
-    return { entity: 'alarm_control_panel.alarmanlage' };
+    return { entity: 'alarm_control_panel.alarmanlage_bedienfeld' };
   }
 
   _skala() {
