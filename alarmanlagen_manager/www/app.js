@@ -228,125 +228,306 @@ const ARTEN = {
   wasser: 'Wasser', erschuetterung: 'Erschütterung', sonstige: 'sonstige',
 };
 
+/* Die Mehrzahl steht ausgeschrieben da. "2 Kontakt im Haus" liest sich wie
+ * ein Übersetzungsfehler, und der Satz steht an der auffälligsten Stelle
+ * der Seite. */
+const ARTEN_MEHRZAHL = {
+  bewegung: 'Bewegungsmelder', kontakt: 'Kontakte', rauch: 'Rauchmelder',
+  wasser: 'Wassermelder', erschuetterung: 'Erschütterungsmelder',
+  sonstige: 'sonstige Melder',
+};
+
+/* Welche Melderarten auf welche Linie gehören. Daraus entsteht der
+ * Hinweis, was Home Assistant kennt, hier aber fehlt – die nützlichste
+ * Auskunft der ganzen Seite: Fünf Rauchmelder im Haus, die in keiner
+ * Alarmanlage stehen, fallen sonst niemandem auf. */
+const LINIENARTEN = {
+  einbruch: ['bewegung', 'kontakt', 'erschuetterung'],
+  rauch: ['rauch'],
+  wasser: ['wasser'],
+};
+
+/* "sonstige" sind meist Diagnosemelder – bei Sven 237 von 291. Vorn stehen
+ * sie nur im Weg. */
+const ARTORDNUNG = ['rauch', 'wasser', 'bewegung', 'kontakt',
+  'erschuetterung', 'sonstige'];
+
 function melderZeichnen() {
   const liste = $('melder-liste');
+  /* Welche Karten offen standen, überlebt das Neuzeichnen: Ein Wechsel der
+   * Linie klappt sonst die Karte zu, an der man gerade arbeitet. */
+  const offen = new Set([...liste.querySelectorAll('details.melder[open]')]
+    .map((d) => d.dataset.id));
   liste.textContent = '';
-  const melder = Z.konfig.melder || [];
-  $('melder-zahl').textContent = melder.length;
 
-  if (!melder.length) {
+  const alle = Z.konfig.melder || [];
+  const suche = ($('melder-filtern')?.value || '').trim().toLowerCase();
+  $('melder-zahl').textContent = `${alle.length} eingerichtet`;
+  standHinzufuegen();
+
+  if (!alle.length) {
     liste.appendChild(el('div', 'leer',
       'Noch keiner. Oben auswählen – oder unter „Übernahme“ aus den '
       + 'vorhandenen Automationen holen.'));
+    return;
   }
 
-  const modi = Object.entries(Z.konfig.modi).filter(([, m]) => m.aktiv);
+  const bereiche = Z.auswahl?.bereiche || {};
+  const zustaende = new Map((Z.auswahl?.melder || [])
+    .map((m) => [m.entity_id, m.zustand]));
 
-  melder.forEach((m, index) => {
-    const kasten = el('div', 'melder' + (m.aktiv === false ? ' aus' : ''));
+  const gruppen = linienNachOrdnung()
+    .concat([['ohne', { name: 'Ohne gültige Linie', reihenfolge: 99 }]]);
 
-    const kopf = el('div', 'melder-kopf');
-    const name = el('input', 'name');
-    name.type = 'text';
-    name.value = m.name || '';
-    name.oninput = () => { m.name = name.value; melderSpeichern(); };
-    kopf.appendChild(name);
+  for (const [linieSchluessel, linie] of gruppen) {
+    const eigene = alle.filter((m) => {
+      const l = Z.konfig.linien[m.linie] ? m.linie : 'ohne';
+      return l === linieSchluessel;
+    });
+    if (!eigene.length) continue;
 
-    const an = el('label');
-    an.style.display = 'flex';
-    an.style.gap = '6px';
-    an.style.color = 'var(--text)';
-    const anKasten = el('input');
-    anKasten.type = 'checkbox';
-    anKasten.checked = m.aktiv !== false;
-    anKasten.onchange = () => { m.aktiv = anKasten.checked; melderSpeichern(); melderZeichnen(); };
-    an.appendChild(anKasten);
-    an.appendChild(el('span', null, 'aktiv'));
-    kopf.appendChild(an);
+    eigene.sort((a, b) =>
+      (bereiche[a.entity] || 'ÿ').localeCompare(bereiche[b.entity] || 'ÿ', 'de')
+      || (a.name || '').localeCompare(b.name || '', 'de'));
 
-    const weg = el('button', 'knopf klein leise', 'Entfernen');
-    weg.onclick = () => {
-      Z.konfig.melder.splice(index, 1);
-      melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
-    };
-    kopf.appendChild(weg);
-    kopf.appendChild(el('div', 'eid', m.entity));
-    kasten.appendChild(kopf);
+    const sichtbar = eigene.filter((m) => !suche
+      || `${m.name} ${m.entity} ${m.ort} ${bereiche[m.entity] || ''}`
+        .toLowerCase().includes(suche));
+    if (suche && !sichtbar.length) continue;
 
-    const felder = el('div', 'melder-felder');
+    const gruppe = el('details', 'karte gruppe');
+    gruppe.open = true;
+    const kopf = el('summary');
+    const links = el('div');
+    links.appendChild(el('strong', null, linie.name));
+    const anzahl = eigene.filter((m) => m.aktiv !== false).length;
+    links.appendChild(el('div', 'hilfe',
+      anzahl === eigene.length
+        ? `${eigene.length} Melder`
+        : `${eigene.length} Melder, davon ${eigene.length - anzahl} abgeschaltet`));
+    kopf.appendChild(links);
+    kopf.appendChild(el('span', 'zahl', String(eigene.length)));
+    gruppe.appendChild(kopf);
 
-    felder.appendChild(wahlfeld('Art', m.art, ARTEN, (wert) => {
-      m.art = wert; melderSpeichern();
-    }));
+    const koerper = el('div', 'gruppe-koerper');
+    const fehlend = fehlendeMelder(linieSchluessel);
+    if (fehlend.length) koerper.appendChild(fehlHinweis(linieSchluessel, fehlend));
 
-    const linien = {};
-    for (const [schluessel, linie] of linienNachOrdnung()) {
-      linien[schluessel] = linie.name;
+    for (const melder of sichtbar) {
+      koerper.appendChild(melderKarte(melder, bereiche, zustaende,
+        offen.has(melder.id)));
     }
-    felder.appendChild(wahlfeld('Linie', m.linie, linien, (wert) => {
-      m.linie = wert; melderSpeichern(); melderZeichnen();
-    }));
+    gruppe.appendChild(koerper);
+    liste.appendChild(gruppe);
+  }
 
-    const ort = el('label');
-    ort.appendChild(document.createTextNode('Ort (für die Ansage)'));
-    const ortFeld = el('input');
-    ortFeld.type = 'text';
-    ortFeld.value = m.ort || '';
-    ortFeld.oninput = () => { m.ort = ortFeld.value; melderSpeichern(); };
-    ort.appendChild(ortFeld);
-    felder.appendChild(ort);
+  if (suche && !liste.hasChildNodes()) {
+    liste.appendChild(el('div', 'leer', 'Kein Melder passt dazu.'));
+  }
+}
 
-    const zustand = el('label');
-    zustand.appendChild(document.createTextNode('Löst aus bei'));
-    const zustandFeld = el('input');
-    zustandFeld.type = 'text';
-    zustandFeld.value = m.ausloesezustand || 'on';
-    zustandFeld.oninput = () => { m.ausloesezustand = zustandFeld.value; melderSpeichern(); };
-    zustand.appendChild(zustandFeld);
-    felder.appendChild(zustand);
+/* Was Home Assistant für diese Linie kennt, hier aber fehlt. */
+function fehlendeMelder(linieSchluessel) {
+  const arten = LINIENARTEN[linieSchluessel];
+  if (!arten) return [];
+  const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
+  return (Z.auswahl?.melder || [])
+    .filter((k) => arten.includes(k.art) && !drin.has(k.entity_id));
+}
 
-    kasten.appendChild(felder);
+function fehlHinweis(linieSchluessel, fehlend) {
+  const kasten = el('div', 'fehlhinweis');
+  const text = el('div');
+  const arten = [...new Set(fehlend.map((f) =>
+    (fehlend.length === 1 ? ARTEN[f.art] : ARTEN_MEHRZAHL[f.art]) || f.art))];
+  text.appendChild(el('strong', null,
+    `${fehlend.length} ${arten.join(' und ')} im Haus `
+    + `${fehlend.length === 1 ? 'ist' : 'sind'} hier nicht eingerichtet`));
+  text.appendChild(el('div', 'hilfe',
+    fehlend.slice(0, 6).map((f) => f.name).join(', ')
+    + (fehlend.length > 6 ? ` und ${fehlend.length - 6} weitere` : '')));
+  kasten.appendChild(text);
 
-    const istScharflinie = (Z.konfig.linien[m.linie] || {}).geltung === 'scharf';
-    if (istScharflinie) {
-      const wahl = el('div', 'modiwahl');
-      wahl.appendChild(el('span', null, 'Gilt in:'));
-      for (const [schluessel, modus] of modi) {
-        const label = el('label');
-        const kasten2 = el('input');
-        kasten2.type = 'checkbox';
-        kasten2.checked = !m.modi?.length || m.modi.includes(schluessel);
-        kasten2.onchange = () => {
-          const alle = modi.map(([s]) => s);
-          let gewaehlt = m.modi?.length ? [...m.modi] : [...alle];
-          if (kasten2.checked) gewaehlt.push(schluessel);
-          else gewaehlt = gewaehlt.filter((s) => s !== schluessel);
-          /* Alle angehakt = leere Liste. Das ist nicht Kosmetik: Kommt
-           * später ein Modus dazu, gilt der Melder dann auch dort, statt
-           * stillschweigend zu fehlen. */
-          m.modi = gewaehlt.length === alle.length ? [] : gewaehlt;
-          melderSpeichern();
-        };
-        label.appendChild(kasten2);
-        label.appendChild(el('span', null, modus.name));
-        wahl.appendChild(label);
-      }
+  const knopf = el('button', 'knopf klein', 'Alle hinzufügen');
+  knopf.onclick = (ereignis) => {
+    ereignis.preventDefault();
+    for (const kandidat of fehlend) melderAnlegen(kandidat, linieSchluessel);
+    melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
+    tost(`${fehlend.length} Melder hinzugefügt.`);
+  };
+  kasten.appendChild(knopf);
+  return kasten;
+}
 
-      const verz = el('label', 'abgesetzt');
-      const verzKasten = el('input');
-      verzKasten.type = 'checkbox';
-      verzKasten.checked = m.verzoegert !== false;
-      verzKasten.onchange = () => { m.verzoegert = verzKasten.checked; melderSpeichern(); };
-      verz.appendChild(verzKasten);
-      verz.appendChild(el('span', null, 'Eintrittsverzögerung'));
-      verz.title = 'Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen.';
-      wahl.appendChild(verz);
-
-      kasten.appendChild(wahl);
-    }
-
-    liste.appendChild(kasten);
+function melderAnlegen(kandidat, linieSchluessel) {
+  const linie = linieSchluessel || (kandidat.art === 'rauch' ? 'rauch'
+    : kandidat.art === 'wasser' ? 'wasser' : 'einbruch');
+  Z.konfig.melder.push({
+    entity: kandidat.entity_id,
+    name: kandidat.name,
+    ort: Z.auswahl?.bereiche?.[kandidat.entity_id] || kandidat.name,
+    art: kandidat.art === 'sonstige' ? 'bewegung' : kandidat.art,
+    linie,
+    modi: [],
+    verzoegert: Z.konfig.linien[linie]?.geltung === 'scharf',
+    ausloesezustand: 'on',
+    aktiv: true,
   });
+}
+
+/* Ein Melder als zugeklappte Zeile. Zugeklappt steht dort, was man beim
+ * Durchsehen wissen will: wo er hängt, was er ist, wann er gilt. */
+function melderKarte(m, bereiche, zustaende, war_offen) {
+  const karte = el('details', 'melder' + (m.aktiv === false ? ' aus' : ''));
+  karte.dataset.id = m.id;
+  karte.open = !!war_offen;
+
+  const kopf = el('summary', 'melder-kopf');
+  const zustand = zustaende.get(m.entity);
+  const punkt = el('span', 'melder-punkt'
+    + (zustand === (m.ausloesezustand || 'on') ? ' an' : '')
+    + (zustand === undefined ? ' fehlt' : ''));
+  punkt.title = zustand === undefined ? 'Gibt es in Home Assistant nicht'
+    : `Zustand gerade: ${zustand}`;
+  kopf.appendChild(punkt);
+
+  const mitte = el('div', 'melder-mitte');
+  mitte.appendChild(el('div', 'melder-name', m.name || m.entity));
+  const linie = Z.konfig.linien[m.linie];
+  const teile = [ARTEN[m.art] || m.art];
+  if (linie?.geltung === 'immer') {
+    teile.push('rund um die Uhr');
+  } else {
+    const modi = m.modi?.length
+      ? m.modi.map((k) => Z.konfig.modi[k]?.name || k).join(', ')
+      : 'alle Modi';
+    teile.push(modi);
+    teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
+  }
+  mitte.appendChild(el('div', 'melder-kurz', teile.join(' · ')));
+  kopf.appendChild(mitte);
+
+  const bereich = bereiche[m.entity];
+  if (bereich) kopf.appendChild(el('span', 'kanal-bereich', bereich));
+  if (m.aktiv === false) kopf.appendChild(el('span', 'marke warn', 'aus'));
+  karte.appendChild(kopf);
+
+  const koerper = el('div', 'melder-koerper');
+  koerper.appendChild(el('div', 'kanal-eid', m.entity));
+
+  const felder = el('div', 'melder-felder');
+  felder.appendChild(textfeld('Name', m.name, (wert) => {
+    m.name = wert; melderSpeichern();
+    kopf.querySelector('.melder-name').textContent = wert || m.entity;
+  }));
+  felder.appendChild(wahlfeld('Art', m.art, ARTEN, (wert) => {
+    m.art = wert; melderSpeichern(); melderZeichnen();
+  }));
+  const linien = {};
+  for (const [schluessel, l] of linienNachOrdnung()) linien[schluessel] = l.name;
+  felder.appendChild(wahlfeld('Linie', m.linie, linien, (wert) => {
+    m.linie = wert;
+    /* Eine Dauerlinie kennt keine Eintrittsverzögerung – der Haken bliebe
+     * sonst gesetzt und wirkungslos stehen. */
+    m.verzoegert = Z.konfig.linien[wert]?.geltung === 'scharf';
+    melderSpeichern(); melderZeichnen();
+  }));
+  felder.appendChild(textfeld('Ort (für die Ansage)', m.ort, (wert) => {
+    m.ort = wert; melderSpeichern();
+  }));
+  felder.appendChild(textfeld('Löst aus bei', m.ausloesezustand || 'on', (wert) => {
+    m.ausloesezustand = wert; melderSpeichern();
+  }));
+  koerper.appendChild(felder);
+
+  if (linie?.geltung === 'scharf') {
+    const wahl = el('div', 'modiwahl');
+    wahl.appendChild(el('span', null, 'Gilt in:'));
+    const modi = Object.entries(Z.konfig.modi).filter(([, x]) => x.aktiv);
+    for (const [schluessel, modus] of modi) {
+      const label = el('label');
+      const kasten = el('input');
+      kasten.type = 'checkbox';
+      kasten.checked = !m.modi?.length || m.modi.includes(schluessel);
+      kasten.onchange = () => {
+        const alleModi = modi.map(([k]) => k);
+        let gewaehlt = m.modi?.length ? [...m.modi] : [...alleModi];
+        if (kasten.checked) gewaehlt.push(schluessel);
+        else gewaehlt = gewaehlt.filter((k) => k !== schluessel);
+        /* Alle angehakt = leere Liste. Das ist nicht Kosmetik: Kommt später
+         * ein Modus dazu, gilt der Melder dann auch dort, statt
+         * stillschweigend zu fehlen. */
+        m.modi = gewaehlt.length === alleModi.length ? [] : gewaehlt;
+        melderSpeichern(); kurzAktualisieren(kopf, m);
+      };
+      label.appendChild(kasten);
+      label.appendChild(el('span', null, modus.name));
+      wahl.appendChild(label);
+    }
+
+    const verz = el('label', 'abgesetzt');
+    const verzKasten = el('input');
+    verzKasten.type = 'checkbox';
+    verzKasten.checked = m.verzoegert !== false;
+    verzKasten.onchange = () => {
+      m.verzoegert = verzKasten.checked;
+      melderSpeichern(); kurzAktualisieren(kopf, m);
+    };
+    verz.appendChild(verzKasten);
+    verz.appendChild(el('span', null, 'Eintrittsverzögerung'));
+    verz.title = 'Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen.';
+    wahl.appendChild(verz);
+    koerper.appendChild(wahl);
+  }
+
+  const fuss = el('div', 'melder-fuss');
+  const an = el('label', 'kanal-an');
+  const anKasten = el('input');
+  anKasten.type = 'checkbox';
+  anKasten.checked = m.aktiv !== false;
+  anKasten.onchange = () => {
+    m.aktiv = anKasten.checked; melderSpeichern(); melderZeichnen();
+  };
+  an.appendChild(anKasten);
+  an.appendChild(el('span', null, 'Dieser Melder zählt'));
+  fuss.appendChild(an);
+
+  const weg = el('button', 'knopf klein leise', 'Entfernen');
+  weg.onclick = (ereignis) => {
+    ereignis.preventDefault();
+    Z.konfig.melder = Z.konfig.melder.filter((x) => x.id !== m.id);
+    melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
+  };
+  fuss.appendChild(weg);
+  koerper.appendChild(fuss);
+
+  karte.appendChild(koerper);
+  return karte;
+}
+
+function kurzAktualisieren(kopf, m) {
+  const linie = Z.konfig.linien[m.linie];
+  const teile = [ARTEN[m.art] || m.art];
+  if (linie?.geltung === 'immer') {
+    teile.push('rund um die Uhr');
+  } else {
+    teile.push(m.modi?.length
+      ? m.modi.map((k) => Z.konfig.modi[k]?.name || k).join(', ')
+      : 'alle Modi');
+    teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
+  }
+  kopf.querySelector('.melder-kurz').textContent = teile.join(' · ');
+}
+
+function textfeld(beschriftung, wert, beiAenderung) {
+  const label = el('label');
+  label.appendChild(document.createTextNode(beschriftung));
+  const feld = el('input');
+  feld.type = 'text';
+  feld.value = wert || '';
+  feld.oninput = () => beiAenderung(feld.value);
+  label.appendChild(feld);
+  return label;
 }
 
 function wahlfeld(beschriftung, wert, werte, beiAenderung) {
@@ -376,6 +557,19 @@ function melderSpeichern() {
   }, 400);
 }
 
+function standHinzufuegen() {
+  const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
+  const frei = (Z.auswahl?.melder || []).filter((k) => !drin.has(k.entity_id));
+  const stand = $('hinzufuegen-stand');
+  const zahl = $('hinzufuegen-zahl');
+  if (!stand) return;
+  const nuetzlich = frei.filter((k) => k.art !== 'sonstige');
+  stand.textContent = nuetzlich.length
+    ? `${nuetzlich.length} erkannte Melder sind noch nicht eingerichtet`
+    : 'Alles Erkannte ist eingerichtet';
+  zahl.textContent = `${frei.length} frei`;
+}
+
 function vorschlaegeZeichnen() {
   const kasten = $('melder-vorschlaege');
   kasten.textContent = '';
@@ -384,37 +578,38 @@ function vorschlaegeZeichnen() {
   const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
   const bereiche = Z.auswahl?.bereiche || {};
 
-  let gezeigt = 0;
-  for (const kandidat of Z.auswahl?.melder || []) {
-    if (filter && kandidat.art !== filter) continue;
-    if (suche && !(`${kandidat.name} ${kandidat.entity_id}`.toLowerCase().includes(suche))) continue;
-    if (gezeigt++ > 200) break;
+  const sortiert = [...(Z.auswahl?.melder || [])].sort((a, b) => {
+    const da = drin.has(a.entity_id) ? 1 : 0;
+    const db = drin.has(b.entity_id) ? 1 : 0;
+    if (da !== db) return da - db;
+    const ia = ARTORDNUNG.indexOf(a.art);
+    const ib = ARTORDNUNG.indexOf(b.art);
+    if (ia !== ib) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    return (a.name || '').localeCompare(b.name || '', 'de');
+  });
 
-    const zeile = el('div', 'vorschlagszeile' + (drin.has(kandidat.entity_id) ? ' drin' : ''));
-    const links = el('div');
-    links.appendChild(el('div', null, kandidat.name));
-    links.appendChild(el('div', 'eid',
-      `${kandidat.entity_id} · ${ARTEN[kandidat.art] || kandidat.art}`
-      + (bereiche[kandidat.entity_id] ? ' · ' + bereiche[kandidat.entity_id] : '')));
+  let gezeigt = 0;
+  for (const kandidat of sortiert) {
+    if (filter && kandidat.art !== filter) continue;
+    const bereich = bereiche[kandidat.entity_id] || '';
+    if (suche && !`${kandidat.name} ${kandidat.entity_id} ${bereich}`
+      .toLowerCase().includes(suche)) continue;
+    if (gezeigt++ > 300) break;
+
+    const zeile = el('div',
+      'vorschlagszeile' + (drin.has(kandidat.entity_id) ? ' drin' : ''));
+    const links = el('div', 'kanal-text');
+    links.appendChild(el('div', 'kanal-name', kandidat.name));
+    links.appendChild(el('div', 'kanal-eid',
+      `${kandidat.entity_id} · ${ARTEN[kandidat.art] || kandidat.art}`));
     zeile.appendChild(links);
+    if (bereich) zeile.appendChild(el('span', 'kanal-bereich', bereich));
 
     const knopf = el('button', 'knopf klein',
       drin.has(kandidat.entity_id) ? 'schon drin' : 'Hinzufügen');
     knopf.disabled = drin.has(kandidat.entity_id);
     knopf.onclick = () => {
-      const linie = kandidat.art === 'rauch' ? 'rauch'
-        : kandidat.art === 'wasser' ? 'wasser' : 'einbruch';
-      Z.konfig.melder.push({
-        entity: kandidat.entity_id,
-        name: kandidat.name,
-        ort: bereiche[kandidat.entity_id] || kandidat.name,
-        art: kandidat.art === 'sonstige' ? 'bewegung' : kandidat.art,
-        linie,
-        modi: [],
-        verzoegert: linie === 'einbruch',
-        ausloesezustand: 'on',
-        aktiv: true,
-      });
+      melderAnlegen(kandidat);
       melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
     };
     zeile.appendChild(knopf);
@@ -424,6 +619,7 @@ function vorschlaegeZeichnen() {
 }
 
 $('melder-suche').oninput = vorschlaegeZeichnen;
+$('melder-filtern').oninput = melderZeichnen;
 $('melder-filter').onchange = vorschlaegeZeichnen;
 
 /* --------------------------------------------------------------- Modi */

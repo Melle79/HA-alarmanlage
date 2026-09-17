@@ -43,6 +43,18 @@ einen Kunstgriff.
   damit nicht das Feuer gelöscht. Diese Linien rühren den Panel-Zustand
   deshalb nicht an; sie melden über eigene Sensoren.
 
+## Melder
+
+Die Melder stehen nach **Linie** gruppiert und darin nach **Bereich**
+sortiert. Zugeklappt sagt jede Zeile, was man beim Durchsehen wissen will:
+Art, in welchen Modi der Melder gilt und ob er verzögert auslöst. Der Punkt
+links zeigt seinen Zustand – grau ruhig, gelb angesprungen, roter Ring
+heißt „gibt es in Home Assistant nicht mehr".
+
+Je Linie steht außerdem, **welche passenden Melder Home Assistant kennt,
+die hier nicht eingerichtet sind**. Ein Rauchmelder, der in keiner
+Alarmanlage steht, fällt sonst niemandem auf.
+
 ## Erste Einrichtung
 
 ![Melder](https://raw.githubusercontent.com/Melle79/HA-alarmanlage/main/docs/bilder/melder.png)

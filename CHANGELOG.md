@@ -1,5 +1,32 @@
 # Änderungen
 
+## 1.2.0 – 17.09.2026
+
+**Die Melderseite ist jetzt nach Linien geordnet**, in derselben Art wie
+die Meldewege. Vorher standen dort 23 gleich große Kästen untereinander,
+ohne erkennbare Ordnung.
+
+* Melder sind nach **Linie** gruppiert und darin nach **Bereich** sortiert.
+  Jede Gruppe ist aufklappbar und zählt, wie viele davon abgeschaltet sind.
+* Jeder Melder ist eine Zeile, die zugeklappt sagt, was man beim Durchsehen
+  wissen will: Name, Bereich, Art, in welchen Modi er gilt und ob er
+  verzögert. Die Einstellungen kommen auf Verlangen.
+* Ein **Punkt links** zeigt den Zustand: grau ruhig, gelb angesprungen,
+  roter Ring heißt „diese Entität gibt es in Home Assistant nicht mehr".
+  Beim Einrichten läuft man einmal durchs Haus und sieht zu.
+* **Was fehlt, wird benannt.** Je Linie steht, welche passenden Melder Home
+  Assistant kennt, die hier nicht eingerichtet sind – mit einem Knopf, der
+  sie alle übernimmt. Fünf Rauchmelder, die in keiner Alarmanlage stehen,
+  fallen sonst niemandem auf.
+* **Suche über die eingerichteten Melder**, auch über den Bereichsnamen.
+* *Melder hinzufügen* ist eine zugeklappte Karte und nimmt nicht mehr den
+  halben Bildschirm ein. In der Liste stehen **„sonstige" zuletzt**: Bei
+  einem gewachsenen Haus sind das die große Mehrheit, und es sind fast
+  immer Diagnosemelder statt Alarmmelder.
+* Wechselt ein Melder die Linie, wird die Eintrittsverzögerung mit
+  umgestellt – bei einer Dauerlinie gibt es keine, der Haken bliebe sonst
+  wirkungslos stehen.
+
 ## 1.1.0 – 17.09.2026
 
 **Die Meldewege sind jetzt Karten.** Vorher standen dort drei endlose

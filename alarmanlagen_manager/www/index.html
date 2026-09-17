@@ -70,30 +70,41 @@
 
   <!-- ---------------------------------------------------------- Melder -->
   <section id="seite-melder" class="seite">
-    <div class="karte">
-      <h2>Melder hinzufügen</h2>
-      <p class="hilfe">Vorgeschlagen wird, was Home Assistant als Bewegung,
-        Kontakt, Rauch oder Wasser führt. Ein Melder ohne Geräteklasse steht
-        unter „sonstige“ und wird von Hand zugeordnet.</p>
-      <div class="zeile">
-        <input type="search" id="melder-suche" placeholder="Suchen …">
-        <select id="melder-filter">
-          <option value="">alle Arten</option>
-          <option value="bewegung">Bewegung</option>
-          <option value="kontakt">Kontakt</option>
-          <option value="rauch">Rauch</option>
-          <option value="wasser">Wasser</option>
-          <option value="erschuetterung">Erschütterung</option>
-          <option value="sonstige">sonstige</option>
-        </select>
+    <details class="karte sammelkarte" id="melder-hinzufuegen">
+      <summary>
+        <div>
+          <strong>Melder hinzufügen</strong>
+          <div class="hilfe" id="hinzufuegen-stand"></div>
+        </div>
+        <span class="zahl" id="hinzufuegen-zahl"></span>
+      </summary>
+      <div class="sammelkarte-koerper">
+        <p class="hilfe">Vorgeschlagen wird, was Home Assistant als Bewegung,
+          Kontakt, Rauch oder Wasser führt. Was keine Geräteklasse hat, steht
+          unter „sonstige“ – das sind meist Diagnosemelder und keine
+          Alarmmelder, deshalb stehen sie zuletzt.</p>
+        <div class="zeile">
+          <input type="search" id="melder-suche" placeholder="Suchen …">
+          <select id="melder-filter">
+            <option value="">alle Arten</option>
+            <option value="bewegung">Bewegung</option>
+            <option value="kontakt">Kontakt</option>
+            <option value="rauch">Rauch</option>
+            <option value="wasser">Wasser</option>
+            <option value="erschuetterung">Erschütterung</option>
+            <option value="sonstige">sonstige</option>
+          </select>
+        </div>
+        <div class="vorschlagsliste" id="melder-vorschlaege"></div>
       </div>
-      <div class="vorschlagsliste" id="melder-vorschlaege"></div>
-    </div>
+    </details>
 
-    <div class="karte">
-      <h2>Eingerichtete Melder <span class="zahl" id="melder-zahl"></span></h2>
-      <div id="melder-liste" class="melderliste"></div>
+    <div class="zeile" id="melder-werkzeuge">
+      <input type="search" id="melder-filtern"
+             placeholder="Eingerichtete Melder durchsuchen …">
+      <span class="zahl" id="melder-zahl"></span>
     </div>
+    <div id="melder-liste"></div>
   </section>
 
   <!-- ------------------------------------------------------------ Modi -->
