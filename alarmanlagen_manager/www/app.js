@@ -331,8 +331,15 @@ function fehlendeMelder(linieSchluessel) {
   const arten = LINIENARTEN[linieSchluessel];
   if (!arten) return [];
   const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
-  return (Z.auswahl?.melder || [])
-    .filter((k) => arten.includes(k.art) && !drin.has(k.entity_id));
+  const weg = new Set(Z.auswahl?.ignoriert || []);
+  return (Z.auswahl?.melder || []).filter((k) => arten.includes(k.art)
+    && !drin.has(k.entity_id) && !weg.has(k.entity_id));
+}
+
+async function ignorieren(entity_id, an) {
+  const antwort = await schicke('api/melder/ignorieren', { entity: entity_id, an });
+  Z.auswahl.ignoriert = antwort.ignoriert;
+  melderZeichnen(); vorschlaegeZeichnen();
 }
 
 function fehlHinweis(linieSchluessel, fehlend) {
@@ -348,6 +355,23 @@ function fehlHinweis(linieSchluessel, fehlend) {
     + (fehlend.length > 6 ? ` und ${fehlend.length - 6} weitere` : '')));
   kasten.appendChild(text);
 
+  const knoepfe = el('div', 'zeile');
+  knoepfe.style.margin = '0';
+
+  const ansehen = el('button', 'knopf klein leise', 'Einzeln ansehen');
+  ansehen.title = 'Öffnet die Liste – dort lässt sich auch ausblenden, was '
+    + 'gar kein Melder ist.';
+  ansehen.onclick = (ereignis) => {
+    ereignis.preventDefault();
+    const arten = LINIENARTEN[linieSchluessel] || [];
+    $('melder-filter').value = arten.length === 1 ? arten[0] : '';
+    $('melder-suche').value = '';
+    $('melder-hinzufuegen').open = true;
+    vorschlaegeZeichnen();
+    $('melder-hinzufuegen').scrollIntoView({ block: 'start' });
+  };
+  knoepfe.appendChild(ansehen);
+
   const knopf = el('button', 'knopf klein', 'Alle hinzufügen');
   knopf.onclick = (ereignis) => {
     ereignis.preventDefault();
@@ -355,7 +379,8 @@ function fehlHinweis(linieSchluessel, fehlend) {
     melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
     tost(`${fehlend.length} Melder hinzugefügt.`);
   };
-  kasten.appendChild(knopf);
+  knoepfe.appendChild(knopf);
+  kasten.appendChild(knoepfe);
   return kasten;
 }
 
@@ -578,6 +603,8 @@ function vorschlaegeZeichnen() {
   const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
   const bereiche = Z.auswahl?.bereiche || {};
 
+  const weg = new Set(Z.auswahl?.ignoriert || []);
+  const zeigeWeg = $('melder-ausgeblendet')?.checked;
   const sortiert = [...(Z.auswahl?.melder || [])].sort((a, b) => {
     const da = drin.has(a.entity_id) ? 1 : 0;
     const db = drin.has(b.entity_id) ? 1 : 0;
@@ -588,8 +615,10 @@ function vorschlaegeZeichnen() {
     return (a.name || '').localeCompare(b.name || '', 'de');
   });
 
+  ausgeblendetStand(weg.size);
   let gezeigt = 0;
   for (const kandidat of sortiert) {
+    if (weg.has(kandidat.entity_id) !== !!zeigeWeg) continue;
     if (filter && kandidat.art !== filter) continue;
     const bereich = bereiche[kandidat.entity_id] || '';
     if (suche && !`${kandidat.name} ${kandidat.entity_id} ${bereich}`
@@ -613,14 +642,42 @@ function vorschlaegeZeichnen() {
       melderSpeichern(); melderZeichnen(); vorschlaegeZeichnen();
     };
     zeile.appendChild(knopf);
+
+    /* Ausblenden ist kein Zierrat: "binary_sensor mit Geräteklasse door"
+     * trifft in einer gewachsenen Installation auch auf Dinge zu, die mit
+     * dem Haus nichts zu tun haben – etwa auf den Öffnungszustand von
+     * Tankstellen. Wer die einmal wegräumt, will sie nie wiedersehen. */
+    if (!drin.has(kandidat.entity_id)) {
+      const weiter = el('button', 'kanal-weg',
+        zeigeWeg ? '↩' : '✕');
+      weiter.title = zeigeWeg ? 'Wieder anbieten'
+        : 'Nicht mehr anbieten – das ist kein Melder';
+      weiter.onclick = (ereignis) => {
+        ereignis.preventDefault();
+        ignorieren(kandidat.entity_id, !zeigeWeg);
+      };
+      zeile.appendChild(weiter);
+    }
     kasten.appendChild(zeile);
   }
-  if (!gezeigt) kasten.appendChild(el('div', 'leer', 'Nichts gefunden.'));
+  if (!gezeigt) {
+    kasten.appendChild(el('div', 'leer', zeigeWeg
+      ? 'Nichts ausgeblendet.' : 'Nichts gefunden.'));
+  }
+}
+
+function ausgeblendetStand(anzahl) {
+  const zeile = $('melder-ausgeblendet-zeile');
+  if (!zeile) return;
+  zeile.style.display = anzahl ? '' : 'none';
+  $('melder-ausgeblendet-zahl').textContent =
+    `${anzahl} ausgeblendet anzeigen`;
 }
 
 $('melder-suche').oninput = vorschlaegeZeichnen;
 $('melder-filtern').oninput = melderZeichnen;
 $('melder-filter').onchange = vorschlaegeZeichnen;
+$('melder-ausgeblendet').onchange = vorschlaegeZeichnen;
 
 /* --------------------------------------------------------------- Modi */
 

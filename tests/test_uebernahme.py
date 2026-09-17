@@ -11,6 +11,37 @@ from basis import AnlagenTest  # noqa: E402
 BEISPIEL = str(Path(__file__).parent / "beispiel")
 
 
+class Kandidaten(AnlagenTest):
+
+    def test_eigene_sensoren_werden_nicht_vorgeschlagen(self):
+        """Sonst würde der Sammelsensor zum Melder für sich selbst.
+
+        Das Add-on veröffentlicht binary_sensor.alarmanlage_rauch als
+        Zusammenfassung aller Rauchmelder. Stünde der in der Auswahl,
+        könnte er sich selbst auslösen.
+        """
+        self.setze("binary_sensor.alarmanlage_rauch", "off",
+                   device_class="smoke", friendly_name="Alarmanlage Rauch")
+        self.setze("binary_sensor.rm_echt", "off",
+                   device_class="smoke", friendly_name="RM Keller")
+        ids = [k["entity_id"] for k in self.ha.melderkandidaten("alarmanlage")]
+        self.assertIn("binary_sensor.rm_echt", ids)
+        self.assertNotIn("binary_sensor.alarmanlage_rauch", ids)
+
+    def test_ohne_praefix_wird_nichts_ausgenommen(self):
+        self.setze("binary_sensor.alarmanlage_rauch", "off",
+                   device_class="smoke")
+        ids = [k["entity_id"] for k in self.ha.melderkandidaten()]
+        self.assertIn("binary_sensor.alarmanlage_rauch", ids)
+
+    def test_ausgeblendete_werden_gemerkt(self):
+        self.assertEqual(self.store.get("ignorierte_melder"), [])
+        self.store.set("ignorierte_melder", ["binary_sensor.tankstelle"])
+        self.store.laden()
+        self.assertEqual(self.store.get("ignorierte_melder"),
+                         ["binary_sensor.tankstelle"])
+
+
 class Uebernahme(AnlagenTest):
 
     def setUp(self):

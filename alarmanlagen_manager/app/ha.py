@@ -123,16 +123,24 @@ def _name(eintrag: dict) -> str:
     return attrs.get("friendly_name") or eintrag.get("entity_id", "")
 
 
-def melderkandidaten() -> list:
+def melderkandidaten(eigener_praefix: str = "") -> list:
     """Alle binary_sensor, nach Art vorsortiert.
 
     Der Vorschlag ist eine Hilfe, kein Urteil: Ein Melder ohne Geräteklasse
     landet unter "sonstige" und wird von Hand zugeordnet.
+
+    Die **eigenen** Sensoren fliegen raus. Das Add-on veröffentlicht selbst
+    einen Rauch-, einen Wasser- und einen Kontaktsensor; die als Melder
+    anzubieten, ergäbe eine Schleife - der Sammelsensor würde zum Melder
+    für sich selbst.
     """
     out = []
+    eigene = f"binary_sensor.{eigener_praefix}_" if eigener_praefix else None
     for eintrag in zustaende():
         eid = eintrag.get("entity_id", "")
         if not eid.startswith("binary_sensor."):
+            continue
+        if eigene and eid.startswith(eigene):
             continue
         klasse = eintrag.get("attributes", {}).get("device_class")
         if klasse in BEWEGUNG:

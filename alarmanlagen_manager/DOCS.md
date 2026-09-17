@@ -55,6 +55,13 @@ Je Linie steht außerdem, **welche passenden Melder Home Assistant kennt,
 die hier nicht eingerichtet sind**. Ein Rauchmelder, der in keiner
 Alarmanlage steht, fällt sonst niemandem auf.
 
+Der Vorschlag geht nach der Geräteklasse, und die ist gutgläubig: In einer
+gewachsenen Installation tragen auch Dinge die Klasse *opening*, die mit
+dem Haus nichts zu tun haben – etwa der Öffnungszustand von Tankstellen.
+Solche Vorschläge lassen sich mit **✕** dauerhaft ausblenden; ein Schalter
+über der Liste holt sie wieder hervor. Die eigenen Sammelsensoren des
+Add-ons stehen gar nicht erst zur Auswahl.
+
 ## Erste Einrichtung
 
 ![Melder](https://raw.githubusercontent.com/Melle79/HA-alarmanlage/main/docs/bilder/melder.png)

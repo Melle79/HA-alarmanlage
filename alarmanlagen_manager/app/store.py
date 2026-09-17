@@ -171,6 +171,11 @@ DEFAULTS = {
         "meldung_abstand_minuten": 30,
         "melden": True,
     },
+    # Vorschläge, die der Benutzer dauerhaft nicht mehr sehen will. Nötig,
+    # weil "binary_sensor mit Geräteklasse door" auch auf Dinge zutrifft,
+    # die mit dem Haus nichts zu tun haben - in einer gewachsenen
+    # Installation etwa auf den Öffnungszustand von Tankstellen.
+    "ignorierte_melder": [],
     "vorpruefung": {
         # Offene Kontakte beim Scharfschalten: melden | ueberbruecken | verhindern
         "offene_kontakte": "melden",

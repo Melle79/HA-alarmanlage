@@ -107,6 +107,23 @@ def melder():
     return jsonify({"ok": True, "melder": store.melder()})
 
 
+@app.route("/api/melder/ignorieren", methods=["POST"])
+def ignorieren():
+    """Einen Vorschlag dauerhaft ausblenden – oder wieder hervorholen."""
+    daten = request.get_json(silent=True) or {}
+    liste = store.get("ignorierte_melder", default=[]) or []
+    entity_id = daten.get("entity")
+    if daten.get("alle_zurueck"):
+        liste = []
+    elif entity_id and daten.get("an", True):
+        if entity_id not in liste:
+            liste.append(entity_id)
+    elif entity_id:
+        liste = [e for e in liste if e != entity_id]
+    store.set("ignorierte_melder", liste)
+    return jsonify({"ok": True, "ignoriert": liste})
+
+
 @app.route("/api/melder/<melder_id>/ueberbruecken", methods=["POST"])
 def ueberbruecken(melder_id):
     daten = request.get_json(silent=True) or {}
@@ -118,8 +135,10 @@ def ueberbruecken(melder_id):
 
 @app.route("/api/auswahl")
 def auswahl():
+    praefix = store.get("betrieb", "entity_praefix", default="alarmanlage")
     return jsonify({
-        "melder": ha.melderkandidaten(),
+        "melder": ha.melderkandidaten(praefix),
+        "ignoriert": store.get("ignorierte_melder", default=[]),
         "bereiche": ha.bereiche(),
         "personen": ha.entitaeten("person."),
         "schloesser": ha.entitaeten("lock."),

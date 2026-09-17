@@ -325,6 +325,15 @@ label > input, label > select { display: block; margin-top: 4px; }
 .vorschlagszeile:last-child { border-bottom: 0; }
 .vorschlagszeile.drin { opacity: .45; }
 .vorschlagsliste { max-height: 340px; }
+.kanal-weg {
+  flex: 0 0 auto; border: 1px solid var(--rand); background: none;
+  color: var(--text-leise); border-radius: 8px; cursor: pointer;
+  padding: 5px 9px; font-size: 13px; line-height: 1;
+}
+.kanal-weg:hover { border-color: var(--schlecht); color: var(--schlecht); }
+#melder-ausgeblendet-zeile {
+  color: var(--text-leise); font-size: 13px; cursor: pointer; margin-bottom: 8px;
+}
 
 /* Eine Sammelkarte: ein ganzer Abschnitt, der zugeklappt anfängt. */
 .sammelkarte { padding: 0; }

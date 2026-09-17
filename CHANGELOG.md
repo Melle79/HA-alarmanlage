@@ -1,5 +1,25 @@
 # Änderungen
 
+## 1.3.0 – 17.09.2026
+
+Nachbesserung am Hinweis „was fehlt hier", der in 1.2.0 dazugekommen ist.
+Auf der echten Anlage schlug er zwei Dinge vor, die er nicht vorschlagen
+darf:
+
+* **Die eigenen Sensoren.** Das Add-on veröffentlicht selbst einen Rauch-,
+  einen Wasser- und einen Kontaktsensor als Zusammenfassung. Die standen in
+  der Auswahl – der Sammelsensor wäre zum Melder für sich selbst geworden.
+  Sie sind jetzt ausgenommen.
+* **Alles, was zufällig dieselbe Geräteklasse trägt.** „binary_sensor mit
+  Geräteklasse *opening*" trifft in einer gewachsenen Installation auch auf
+  den Öffnungszustand von zwölf Tankstellen zu. Dagegen hilft kein
+  Erkennungstrick, sondern ein Knopf: Jeder Vorschlag lässt sich mit **✕
+  dauerhaft ausblenden**, ein Schalter holt die Ausgeblendeten wieder
+  hervor. Ausgeblendetes zählt auch im Hinweis nicht mehr mit.
+
+Außerdem hat der Hinweis einen zweiten Knopf: *Einzeln ansehen* öffnet die
+Liste, statt nur „alle hinzufügen" anzubieten.
+
 ## 1.2.0 – 17.09.2026
 
 **Die Melderseite ist jetzt nach Linien geordnet**, in derselben Art wie
