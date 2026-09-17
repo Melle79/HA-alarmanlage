@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alarmanlagen-Manager</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="kopf">
+  <div class="kopf-titel">
+    <span class="kopf-symbol" id="kopf-symbol">🛡️</span>
+    <div>
+      <h1>Alarmanlage</h1>
+      <p class="kopf-unter" id="kopf-unter">wird geladen …</p>
+    </div>
+  </div>
+  <div class="kopf-hinweise" id="kopf-hinweise"></div>
+</header>
+
+<nav class="reiter" id="reiter">
+  <button data-seite="uebersicht" class="an">Übersicht</button>
+  <button data-seite="melder">Melder</button>
+  <button data-seite="modi">Modi</button>
+  <button data-seite="schaltung">Scharfschaltung</button>
+  <button data-seite="meldewege">Meldewege</button>
+  <button data-seite="uebernahme">Übernahme</button>
+  <button data-seite="protokoll">Protokoll</button>
+</nav>
+
+<main>
+
+  <!-- ------------------------------------------------------- Übersicht -->
+  <section id="seite-uebersicht" class="seite an">
+    <div class="zustandskachel" id="zustandskachel">
+      <div class="zustand-ring" id="zustand-ring"><span id="zustand-symbol">🛡️</span></div>
+      <div class="zustand-text">
+        <div class="zustand-name" id="zustand-name">—</div>
+        <div class="zustand-unter" id="zustand-unter"></div>
+        <div class="zustand-frist" id="zustand-frist"></div>
+      </div>
+    </div>
+
+    <div class="modusleiste" id="modusleiste"></div>
+
+    <div class="karten" id="uebersicht-karten"></div>
+
+    <div class="karte">
+      <h2>Betrieb</h2>
+      <label class="schalterzeile">
+        <input type="checkbox" id="schalter-trockenlauf">
+        <span>
+          <strong>Trockenlauf</strong>
+          <small>Die Anlage rechnet und protokolliert alles, schickt aber
+            nichts hinaus. So lässt sie sich neben den alten Automationen
+            einfahren.</small>
+        </span>
+      </label>
+      <label class="schalterzeile">
+        <input type="checkbox" id="schalter-automatik">
+        <span>
+          <strong>Automatik</strong>
+          <small>Aus heißt: Die Anlage schaltet sich nicht mehr von selbst
+            scharf. Von Hand geht weiter alles.</small>
+        </span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- Melder -->
+  <section id="seite-melder" class="seite">
+    <div class="karte">
+      <h2>Melder hinzufügen</h2>
+      <p class="hilfe">Vorgeschlagen wird, was Home Assistant als Bewegung,
+        Kontakt, Rauch oder Wasser führt. Ein Melder ohne Geräteklasse steht
+        unter „sonstige“ und wird von Hand zugeordnet.</p>
+      <div class="zeile">
+        <input type="search" id="melder-suche" placeholder="Suchen …">
+        <select id="melder-filter">
+          <option value="">alle Arten</option>
+          <option value="bewegung">Bewegung</option>
+          <option value="kontakt">Kontakt</option>
+          <option value="rauch">Rauch</option>
+          <option value="wasser">Wasser</option>
+          <option value="erschuetterung">Erschütterung</option>
+          <option value="sonstige">sonstige</option>
+        </select>
+      </div>
+      <div class="vorschlagsliste" id="melder-vorschlaege"></div>
+    </div>
+
+    <div class="karte">
+      <h2>Eingerichtete Melder <span class="zahl" id="melder-zahl"></span></h2>
+      <div id="melder-liste" class="melderliste"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------ Modi -->
+  <section id="seite-modi" class="seite">
+    <div class="karte">
+      <h2>Scharfmodi</h2>
+      <p class="hilfe">Die <strong>Ausgehverzögerung</strong> ist die Zeit zum
+        Verlassen des Hauses, bevor die Melder zählen. Die
+        <strong>Eintrittsverzögerung</strong> ist die Zeit zum Entschärfen,
+        bevor der Alarm losgeht – sie fängt die Ortung ab, die dem
+        Heimkommen regelmäßig nachhängt.</p>
+      <div id="modi-liste"></div>
+    </div>
+    <div class="karte">
+      <h2>Gefahrenlinien</h2>
+      <p class="hilfe"><strong>Nur scharf</strong> heißt: zählt, wenn die
+        Anlage scharf ist. <strong>Rund um die Uhr</strong> heißt: zählt
+        immer – Rauch und Wasser kümmert es nicht, ob jemand zu Hause ist.</p>
+      <div id="linien-liste"></div>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------- Scharfschaltung -->
+  <section id="seite-schaltung" class="seite">
+    <div class="karte">
+      <h2>Wovon hängt der Hausmodus ab?</h2>
+      <div id="quelle-wahl" class="wahlgruppe"></div>
+      <div id="anwesenheit-block">
+        <h3>Personen</h3>
+        <p class="hilfe">Geprüft wird ausschließlich auf „zu Hause“. Manche
+          Ortungsquellen setzen unterwegs eigene Standzonen statt
+          „abwesend“ – eine Prüfung darauf ginge nie auf.</p>
+        <div id="personen-liste" class="kaestchenliste"></div>
+        <div class="feldzeile">
+          <label>Modus, wenn niemand da ist
+            <select id="modus-leer"></select></label>
+          <label>Wie lange leer, bevor scharf geschaltet wird
+            <span class="einheit"><input type="number" id="leer-minuten" min="0" step="1"> Minuten</span></label>
+          <label>Handmodus, der nicht von selbst kippt
+            <select id="handmodus"></select></label>
+        </div>
+        <label class="schalterzeile">
+          <input type="checkbox" id="nie-scharf">
+          <span><strong>Nie scharf, solange jemand als zu Hause gemeldet ist</strong>
+            <small>Der Rettungsanker gegen jede falsche Abwesenheitsmeldung.
+              Ohne ihn steht die Anlage scharf, während die Familie schläft.</small></span>
+        </label>
+      </div>
+      <div id="entitaet-block" class="versteckt">
+        <label>Vorhandene Entität
+          <select id="quelle-entitaet"></select></label>
+        <p class="hilfe">Die Werte dieser Entität werden den Modi zugeordnet,
+          sobald sie gewählt ist.</p>
+        <div id="zuordnung-liste"></div>
+      </div>
+    </div>
+
+    <div class="karte">
+      <h2>Entschärfen am Schloss</h2>
+      <p class="hilfe">Wer die Haustür aufschließt, hat sich am Schloss
+        ausgewiesen – das ist der Nachweis, nicht der Bewegungsmelder danach.
+        Mehrere Schlossquellen dürfen nebeneinander stehen: Sie sind sich
+        selten einig, und wer sich für eine entscheidet, entscheidet sich
+        irgendwann falsch.</p>
+      <h3>Schlösser</h3>
+      <div id="schloesser-liste" class="kaestchenliste"></div>
+      <h3>Zusätzliche Meldequellen</h3>
+      <p class="hilfe">Sensoren, die denselben Schlosszustand melden, aber
+        keine Schloss-Entität sind.</p>
+      <div class="zeile">
+        <select id="zusatz-wahl"></select>
+        <button id="zusatz-hinzu" class="knopf klein">Hinzufügen</button>
+      </div>
+      <div id="zusatz-liste" class="chipliste"></div>
+
+      <h3>Nachlaufsperre</h3>
+      <p class="hilfe">Nach dem Aufschließen löst Bewegung nicht aus – sonst
+        alarmiert die Anlage denjenigen, der gerade hereingekommen ist. Die
+        Sperre endet kurz nach dem Abschließen; scharf wird erst später
+        wieder, damit kein blindes Fenster entsteht.</p>
+      <div class="feldzeile">
+        <label>Sperre endet nach dem Abschließen
+          <span class="einheit"><input type="number" id="nachlauf-minuten" min="0"> Minuten</span></label>
+        <label>Obergrenze ab dem Aufschließen
+          <span class="einheit"><input type="number" id="nachlauf-hoechstens" min="0"> Minuten</span></label>
+        <label>Wieder scharf nach dem Abschließen
+          <span class="einheit"><input type="number" id="wieder-scharf" min="0"> Minuten</span></label>
+        <label>Rückfall, falls „abgeschlossen“ nie kommt
+          <span class="einheit"><input type="number" id="rueckfall" min="0"> Stunden</span></label>
+        <label>Unterdrückte Bewegung höchstens melden alle
+          <span class="einheit"><input type="number" id="meldung-abstand" min="0"> Minuten</span></label>
+      </div>
+      <label class="schalterzeile">
+        <input type="checkbox" id="unterdrueckung-melden">
+        <span><strong>Unterdrückte Bewegung melden</strong>
+          <small>Sichtbar soll sie bleiben, hörbar nicht bei jeder Bewegung –
+            dafür ist der Abstand da.</small></span>
+      </label>
+    </div>
+
+    <div class="karte">
+      <h2>Vorprüfung beim Scharfschalten</h2>
+      <p class="hilfe">Was geschieht, wenn beim Scharfschalten ein Kontakt
+        offen steht.</p>
+      <div id="vorpruefung-wahl" class="wahlgruppe"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- Meldewege -->
+  <section id="seite-meldewege" class="seite">
+    <p class="hilfe grossraum">Jede Stufe sagt, wer etwas erfährt und wie
+      laut. <strong>Kritischer Push</strong> durchbricht den Fokusmodus –
+      eine normale Meldung bleibt nachts liegen, genau dann, wenn sie
+      gebraucht wird. Umgekehrt weckt ein kritischer Push für eine
+      unterdrückte Bewegung fünf Menschen ohne Anlass.</p>
+    <div id="meldewege-liste"></div>
+  </section>
+
+  <!-- ------------------------------------------------------- Übernahme -->
+  <section id="seite-uebernahme" class="seite">
+    <div class="karte">
+      <h2>Vorhandene Automationen</h2>
+      <p class="hilfe">Gesucht wird in <code>automations.yaml</code>. Was hier
+        steht, würde dieses Add-on ersetzen. Abgeschaltet wird, nicht
+        gelöscht – und der Zustand wird vorher weggeschrieben.</p>
+      <button id="vorschlag-laden" class="knopf">Automationen durchsehen</button>
+      <div id="uebernahme-ergebnis"></div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------- Protokoll -->
+  <section id="seite-protokoll" class="seite">
+    <div class="karte">
+      <h2>Was passiert ist</h2>
+      <div class="zeile">
+        <select id="protokoll-filter">
+          <option value="">alles</option>
+          <option value="alarm">Alarme</option>
+          <option value="scharf">Scharfschaltungen</option>
+          <option value="entschaerft">Entschärfungen</option>
+          <option value="unterdrueckt">Unterdrückte Bewegung</option>
+          <option value="probe">Probebetrieb</option>
+          <option value="hausmodus">Hausmodus</option>
+        </select>
+        <button id="protokoll-neu" class="knopf klein">Neu laden</button>
+      </div>
+      <div id="protokoll-liste" class="protokoll"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="tost" class="tost"></div>
+<script src="app.js"></script>
+</body>
+</html>

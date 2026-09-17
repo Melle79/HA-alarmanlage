@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Grundform: der Schild. Auf 32 px bleibt nur noch seine Silhouette und
+       der rote Punkt übrig - deshalb keine feineren Formen darin. -->
+  <defs>
+    <linearGradient id="grund" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f6fdb"/>
+      <stop offset="1" stop-color="#1b3f80"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#grund)"/>
+  <path d="M64 22 L102 37 V68 C102 89 86 102 64 110 C42 102 26 89 26 68 V37 Z"
+        fill="#ffffff"/>
+  <circle cx="64" cy="64" r="17" fill="#cf3a3a"/>
+  <circle cx="64" cy="64" r="17" fill="none" stroke="#ffffff" stroke-width="3"/>
+</svg>

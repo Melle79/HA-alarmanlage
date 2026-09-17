@@ -1,0 +1,140 @@
+# Gekürzter Nachbau einer gewachsenen Alarmanlage aus Automationen.
+# Absichtlich mit den Eigenheiten, die es in echten Anlagen gibt: zwei
+# Schlossquellen, ein Rauchmelder je Zimmer, und eine Automation, die bei
+# Rauch Rollos fährt und deshalb nicht hierher gehört.
+- id: '1720919000001'
+  alias: Alarm Rauchmelder Luna
+  triggers:
+  - entity_id:
+    - binary_sensor.rm_luna_rauch
+    to:
+    - 'on'
+    trigger: state
+  actions:
+  - data:
+      title: ' !! Feueralarm bei LUNA !!'
+      message: Achtung! In Lunas Zimmer wurde Rauch erkannt!
+    action: notify.notify
+  - data:
+      message: Achtung! In Lunas Zimmer wurde Rauch erkannt!
+      data:
+        type: tts
+    action: notify.alexa_media_kuche
+  - data:
+      message: Achtung! In Lunas Zimmer wurde Rauch erkannt!
+      data:
+        type: tts
+    action: notify.alexa_media_wohnzimmer
+  mode: single
+- id: '1720919000002'
+  alias: Alarm Rauchmelder Keller
+  triggers:
+  - entity_id:
+    - binary_sensor.rm_keller_rauch
+    to:
+    - 'on'
+    trigger: state
+  actions:
+  - data:
+      message: Achtung! Im Keller wurde Rauch erkannt!
+      data:
+        type: tts
+    action: notify.alexa_media_kuche
+  mode: single
+- id: rm_alarm_oeffnet_rollos
+  alias: RM Alarm öffnet alle Rollos
+  triggers:
+  - entity_id: binary_sensor.rm_luna_rauch
+    to: 'on'
+    trigger: state
+  actions:
+  - action: cover.open_cover
+    target:
+      entity_id: cover.lunas_rollo
+  mode: single
+- id: alarmanlage_folgt_hausmodus
+  alias: Alarmanlage folgt dem Hausmodus
+  triggers:
+  - trigger: state
+    entity_id: input_select.hausmodus
+  actions:
+  - action: alarm_control_panel.alarm_arm_away
+    target:
+      entity_id: alarm_control_panel.alarmanlage
+  mode: single
+- id: alarmanlage_melder_loest_aus
+  alias: Alarmanlage - Melder loest aus
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.bwm_eg_motion
+    - binary_sensor.bwm_og_motion
+    - binary_sensor.flur_motion
+    from: 'off'
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: alarm_control_panel.alarmanlage
+    state:
+    - armed_away
+  actions:
+  - action: alarm_control_panel.alarm_trigger
+    target:
+      entity_id: alarm_control_panel.alarmanlage
+  mode: single
+- id: alarmanlage_meldet_sich
+  alias: Alarmanlage - Alarm melden
+  triggers:
+  - trigger: state
+    entity_id: alarm_control_panel.alarmanlage
+    to: triggered
+  actions:
+  - action: notify.mobile_app_svens_iphone
+    data:
+      title: Alarm im Haus
+      message: Bewegung erkannt.
+  - action: notify.mobile_app_isabels_iphone
+    data:
+      title: Alarm im Haus
+      message: Bewegung erkannt.
+  mode: single
+- id: alarmanlage_haustuer_entschaerft
+  alias: Alarmanlage - Haustuer entsperrt entschaerft
+  triggers:
+  - trigger: state
+    entity_id:
+    - lock.lock_ultra_db
+    - lock.haustur
+    to: unlocked
+  actions:
+  - action: alarm_control_panel.alarm_disarm
+    target:
+      entity_id: alarm_control_panel.alarmanlage
+  mode: single
+- id: hausmodus_folgt_anwesenheit
+  alias: Hausmodus folgt der Anwesenheit
+  triggers:
+  - trigger: state
+    entity_id:
+    - person.sven
+    - person.isabel
+    - person.finn
+    to: home
+  actions:
+  - action: input_select.select_option
+    target:
+      entity_id: input_select.hausmodus
+    data:
+      option: Zuhause
+  mode: single
+- id: waschmaschine_fertig
+  alias: Waschmaschine fertig
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.waschmaschine_power
+    below: 1
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.led_band_essecke
+  mode: single

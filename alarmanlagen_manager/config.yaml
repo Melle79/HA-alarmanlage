@@ -1,0 +1,41 @@
+name: Alarmanlagen-Manager
+version: "1.0.0"
+slug: alarmanlagen_manager
+description: Einbruch- und Rauchmeldung mit eigener Oberfläche – Melder, Modi, Verzögerungen und Meldewege ohne eine einzige Automation
+url: https://github.com/Melle79/HA-alarmanlage
+arch:
+  - aarch64
+  - amd64
+  - armv7
+init: false
+ingress: true
+ingress_port: 8102
+panel_icon: mdi:shield-home
+panel_title: Alarmanlage
+# config:rw, weil das Add-on drei Dinge dort tut: die Dashboard-Karte nach
+# /config/www legen, die vorhandenen Automationen zur Übernahme lesen und
+# eine Sicherung anlegen, bevor es sie abschaltet.
+map:
+  - config:rw
+homeassistant_api: true
+auth_api: true
+services:
+  - mqtt:want
+# Startet nach dem Broker: ohne MQTT gäbe es beim ersten Lauf kein Panel.
+startup: application
+options:
+  mqtt_enabled: true
+  mqtt_host: ""
+  mqtt_port: 1883
+  mqtt_user: ""
+  mqtt_password: ""
+  entity_praefix: "alarmanlage"
+  log_level: "info"
+schema:
+  mqtt_enabled: bool
+  mqtt_host: str?
+  mqtt_port: port?
+  mqtt_user: str?
+  mqtt_password: password?
+  entity_praefix: str
+  log_level: list(debug|info|warning|error)
