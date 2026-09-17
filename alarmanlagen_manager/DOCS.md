@@ -1,7 +1,11 @@
 # Alarmanlagen-Manager
 
 Einbruch- und Gefahrenmeldung für Home Assistant, vollständig über eine
-Oberfläche einzurichten. Das Add-on ersetzt das, was sonst aus einem
+Oberfläche einzurichten.
+
+> **Das ausführliche [Handbuch](https://github.com/Melle79/HA-alarmanlage/blob/main/HANDBUCH.md)**
+> erklärt jede Seite, die wiederkehrenden Aufgaben und die Fehlersuche. Hier
+> steht die Kurzfassung. Das Add-on ersetzt das, was sonst aus einem
 YAML-Bedienfeld, einer Handvoll Helfer und einem Dutzend Automationen
 zusammenwächst.
 
