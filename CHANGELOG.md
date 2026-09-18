@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.9.3 – 18.09.2026
+
+**Die Karte bekommt oben Luft.** Ohne Überschrift klebte der Inhalt am
+oberen Rand – den Abstand bringt sonst der Kartenkopf mit, und ohne Titel
+gibt es keinen. Jetzt setzt die Karte ihn selbst, wenn kein Titel da ist.
+
 ## 1.9.2 – 18.09.2026
 
 **Die Karte fügt sich ins Theme ein.** Sie zeichnete innen einen eigenen

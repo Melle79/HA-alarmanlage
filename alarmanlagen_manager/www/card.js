@@ -325,8 +325,12 @@ class AlarmanlageCard extends HTMLElement {
     return `
       :host { --skala: ${this._skala()}; }
       * { box-sizing: border-box; }
+      /* Ohne Überschrift fehlt der Karte oben die Luft, die sonst der
+         Kartenkopf mitbringt - der Inhalt klebt dann am Rand. */
       .inhalt {
-        padding: 0 16px 16px; display: flex; flex-direction: column;
+        padding: ${this._konfig.titel ? '4px' : 'calc(16px * var(--skala))'}
+                 16px 16px;
+        display: flex; flex-direction: column;
         gap: calc(10px * var(--skala));
       }
       .marken { display: flex; gap: 6px; flex-wrap: wrap; }
