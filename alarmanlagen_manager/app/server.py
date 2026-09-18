@@ -133,6 +133,25 @@ def ueberbruecken(melder_id):
 
 # ------------------------------------------------------------ Auswahllisten
 
+@app.route("/api/einrichtung", methods=["POST"])
+def einrichtung():
+    """Fortschritt des Assistenten festhalten.
+
+    Eigener Endpunkt statt eines Feldes in /api/konfig, weil er bei jedem
+    Schritt gerufen wird: So bleibt ein halb ausgefüllter Assistent ohne
+    Folgen für die übrige Konfiguration.
+    """
+    daten = request.get_json(silent=True) or {}
+    stand = store.get("einrichtung", default={}) or {}
+    for feld in ("abgeschlossen", "schritt", "uebersprungen"):
+        if feld in daten:
+            stand[feld] = daten[feld]
+    store.set("einrichtung", stand)
+    if daten.get("abgeschlossen"):
+        protokoll.schreiben("betrieb", "Einrichtung abgeschlossen")
+    return jsonify({"ok": True, "einrichtung": stand})
+
+
 @app.route("/api/auswahl")
 def auswahl():
     praefix = store.get("betrieb", "entity_praefix", default="alarmanlage")

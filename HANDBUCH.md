@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.6.2.
+Für Home Assistant. Stand: Fassung 1.7.0.
 
 ---
 
@@ -8,16 +8,17 @@ Für Home Assistant. Stand: Fassung 1.6.2.
 
 1. [Was dieses Add-on ist, und was nicht](#was-dieses-add-on-ist-und-was-nicht)
 2. [Vier Begriffe, die man auseinanderhalten muss](#vier-begriffe-die-man-auseinanderhalten-muss)
-3. [Einrichten](#einrichten)
-4. [Von vorhandenen Automationen kommen](#von-vorhandenen-automationen-kommen)
-5. [Die Oberfläche, Seite für Seite](#die-oberfläche-seite-für-seite)
-6. [Der Trockenlauf und das Umschalten](#der-trockenlauf-und-das-umschalten)
-7. [Was in Home Assistant entsteht](#was-in-home-assistant-entsteht)
-8. [Die Dashboard-Karte](#die-dashboard-karte)
-9. [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
-10. [Wenn etwas nicht stimmt](#wenn-etwas-nicht-stimmt)
-11. [Sicherung, Umzug, Zurückdrehen](#sicherung-umzug-zurückdrehen)
-12. [Grenzen](#grenzen)
+3. [Der Einrichtungsassistent](#der-einrichtungsassistent)
+4. [Einrichten](#einrichten)
+5. [Von vorhandenen Automationen kommen](#von-vorhandenen-automationen-kommen)
+6. [Die Oberfläche, Seite für Seite](#die-oberfläche-seite-für-seite)
+7. [Der Trockenlauf und das Umschalten](#der-trockenlauf-und-das-umschalten)
+8. [Was in Home Assistant entsteht](#was-in-home-assistant-entsteht)
+9. [Die Dashboard-Karte](#die-dashboard-karte)
+10. [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
+11. [Wenn etwas nicht stimmt](#wenn-etwas-nicht-stimmt)
+12. [Sicherung, Umzug, Zurückdrehen](#sicherung-umzug-zurückdrehen)
+13. [Grenzen](#grenzen)
 
 ---
 
@@ -72,6 +73,43 @@ Panel-Zustand deshalb **nicht** an – sie melden über eigene Sensoren.
 
 ---
 
+## Der Einrichtungsassistent
+
+![Einrichtungsassistent](docs/bilder/assistent.png)
+
+Beim ersten Start führt ein Assistent durch zehn Schritte. Er ist später
+über **Übersicht → Einrichtung** wieder erreichbar und ändert nur, was Sie
+bestätigen.
+
+| Schritt | Worum es geht |
+|---|---|
+| 1 | Was Home Assistant hier kennt, in Zahlen |
+| 2 | Vorhandene Automationen erkennen und ihre Einstellungen übernehmen |
+| 3 | Personen – woran die Anlage Anwesenheit erkennt |
+| 4 | Melder, nach Art gruppiert und sinnvoll vorausgewählt |
+| 5 | Haustiere – welche Räume das Tier darf |
+| 6 | Türschlösser – der Ausweis beim Heimkommen |
+| 7 | Ausgeh- und Eintrittsverzögerung |
+| 8 | Meldewege – Push, Ansagen bei Rauch |
+| 9 | Eine harmlose Testmeldung |
+| 10 | Zusammenfassung und der Weg in den Echtbetrieb |
+
+Zwei Dinge, auf die Sie sich verlassen können:
+
+* **Der Assistent schaltet nie scharf** und schaltet den Trockenlauf nicht
+  ab. Am Ende läuft die Anlage im Probebetrieb, und Sie entscheiden, wann
+  sie ernst macht.
+* **Jeder Schritt speichert sofort.** Schließen Sie ihn mit *Später*, machen
+  Sie beim nächsten Mal dort weiter, wo Sie aufgehört haben.
+
+Überspringen geht bei jedem Schritt außer dem ersten und dem letzten. Was
+Sie überspringen, behält seine Vorgabe und lässt sich in den Reitern
+nachholen.
+
+Wer die Anlage lieber von Hand einrichtet, klickt den Assistenten mit
+*Später* weg – die folgenden Abschnitte beschreiben denselben Weg
+ausführlich.
+
 ## Einrichten
 
 ### Voraussetzungen
@@ -88,7 +126,8 @@ Panel-Zustand deshalb **nicht** an – sie melden über eigene Sensoren.
 2. *Alarmanlagen-Manager* installieren und starten
 3. Die Oberfläche über den Eintrag **Alarmanlage** in der Seitenleiste öffnen
 
-Beim ersten Start ist der **Trockenlauf an**. Die Anlage rechnet und
+Beim ersten Start öffnet sich der [Einrichtungsassistent](#der-einrichtungsassistent)
+von selbst. Und der **Trockenlauf ist an**. Die Anlage rechnet und
 protokolliert alles, schickt aber nichts hinaus. Das ist Absicht: So lässt sie
 sich neben einer vorhandenen Lösung einfahren, ohne dass nachts zwei Anlagen
 melden.

@@ -73,6 +73,14 @@ Add-ons stehen gar nicht erst zur Auswahl.
 
 ## Erste Einrichtung
 
+![Einrichtungsassistent](https://raw.githubusercontent.com/Melle79/HA-alarmanlage/main/docs/bilder/assistent.png)
+
+Beim ersten Start führt ein **Assistent** durch zehn Schritte – von den
+Personen über die Melder und Haustiere bis zur Testmeldung. Er ist später
+über *Übersicht → Einrichtung* wieder erreichbar, schaltet nie scharf und
+speichert jeden Schritt sofort. Wer lieber von Hand einrichtet, klickt ihn
+mit *Später* weg.
+
 ![Melder](https://raw.githubusercontent.com/Melle79/HA-alarmanlage/main/docs/bilder/melder.png)
 
 1. **Übernahme** öffnen und *Automationen durchsehen*. Das Add-on liest

@@ -599,3 +599,105 @@ label > input, label > select { display: block; margin-top: 4px; }
 .tost.schlecht { background: var(--schlecht); color: #fff; }
 
 .leer { color: var(--text-leise); font-size: 14px; padding: 12px 0; }
+
+/* =============================================================== Assistent
+
+   Er liegt über allem und ist kein Reiter: Wer eingerichtet wird, soll
+   nicht nebenbei woanders klicken. Das Blatt hat eine feste Höhe, damit
+   Kopf und Fuß stehen bleiben und nur der Inhalt scrollt - sonst rutscht
+   der "Weiter"-Knopf bei einem langen Schritt aus dem Bild. */
+
+.assistent {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(10, 14, 20, .55);
+  display: grid; place-items: center;
+  padding: 16px;
+}
+.assistent.versteckt { display: none; }
+body.mit-assistent { overflow: hidden; }
+
+.assistent-blatt {
+  background: var(--flaeche);
+  border: 1px solid var(--rand);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .3);
+  width: min(720px, 100%);
+  max-height: min(860px, 100%);
+  display: flex; flex-direction: column;
+}
+
+.assistent-kopf {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; padding: 20px 22px 12px;
+}
+.assistent-schritt {
+  font-size: 12px; color: var(--text-leise);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.assistent-kopf h2 { margin: 4px 0 0; font-size: 20px; font-weight: 600; }
+
+.assistent-balken {
+  height: 3px; background: var(--flaeche2); margin: 0 22px;
+  border-radius: 999px; overflow: hidden;
+}
+.assistent-balken > div {
+  height: 100%; background: var(--akzent); width: 0;
+  transition: width .25s;
+}
+
+.assistent-koerper {
+  padding: 18px 22px; overflow-y: auto; flex: 1 1 auto;
+}
+.assistent-koerper h3 {
+  margin: 18px 0 8px; font-size: 13px; font-weight: 600;
+  color: var(--text-leise); text-transform: uppercase; letter-spacing: .03em;
+}
+.assistent-koerper h3:first-child { margin-top: 0; }
+.assistent-koerper > .knopf { margin-top: 14px; }
+
+.assistent-fuss {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 14px 22px 18px; border-top: 1px solid var(--rand);
+}
+.assistent-fuss-rechts { display: flex; gap: 8px; }
+
+.a-text { margin: 0 0 14px; font-size: 15px; line-height: 1.55; }
+.a-liste { margin: 0 0 14px; padding-left: 20px; font-size: 14px; }
+.a-liste li { margin-bottom: 3px; }
+
+/* Ein Hinweis ist kein Schmuck: Er steht an der Stelle, an der die
+   Entscheidung fällt, und sagt das Warum. */
+.a-hinweis {
+  border: 1px solid var(--rand); border-left: 3px solid var(--text-leise);
+  border-radius: 8px; padding: 10px 14px; margin: 14px 0;
+  font-size: 13px; line-height: 1.5; color: var(--text-leise);
+}
+.a-hinweis strong { display: block; color: var(--text); margin-bottom: 3px; }
+.a-hinweis.warn { border-left-color: var(--warn); }
+.a-hinweis.warn strong { color: var(--warn); }
+.a-hinweis.gut { border-left-color: var(--gut); }
+.a-hinweis.gut strong { color: var(--gut); }
+.a-hinweis.info { border-left-color: var(--akzent); }
+.a-hinweis.info strong { color: var(--akzent); }
+
+.a-kasten {
+  border: 1px solid var(--rand); border-radius: 8px;
+  max-height: 200px; overflow-y: auto; margin-bottom: 14px;
+}
+.a-zeile {
+  padding: 7px 12px; font-size: 13px; border-bottom: 1px solid var(--rand);
+}
+.a-zeile:last-child { border-bottom: 0; }
+.a-zeile.leise { color: var(--text-leise); }
+
+.a-zahl { display: block; margin-bottom: 16px; }
+.a-zahl-titel { display: block; color: var(--text); font-size: 14px; font-weight: 500; }
+.a-zahl small { display: block; color: var(--text-leise); font-size: 12px; margin-top: 5px; }
+.a-ergebnis { margin-top: 4px; }
+
+@media (max-width: 560px) {
+  .assistent { padding: 0; }
+  .assistent-blatt { max-height: 100%; height: 100%; border-radius: 0; border: 0; }
+  .assistent-fuss { flex-wrap: wrap; }
+  .assistent-fuss-rechts { flex: 1 1 auto; justify-content: flex-end; }
+}

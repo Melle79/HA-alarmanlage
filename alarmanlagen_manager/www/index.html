@@ -46,6 +46,12 @@
 
     <div class="karten" id="uebersicht-karten"></div>
 
+    <div class="karte" id="einrichtung-karte">
+      <h2>Einrichtung</h2>
+      <p class="hilfe" id="einrichtung-stand"></p>
+      <button id="einrichtung-starten" class="knopf">Assistenten öffnen</button>
+    </div>
+
     <div class="karte">
       <h2>Betrieb</h2>
       <label class="schalterzeile">
@@ -260,6 +266,30 @@
   </section>
 
 </main>
+
+<!-- Der Einrichtungsassistent liegt über allem. Er ist kein Reiter:
+     Wer eingerichtet wird, soll nicht nebenbei woanders klicken. -->
+<div id="assistent" class="assistent versteckt">
+  <div class="assistent-blatt">
+    <header class="assistent-kopf">
+      <div>
+        <div class="assistent-schritt" id="assistent-schritt"></div>
+        <h2 id="assistent-titel"></h2>
+      </div>
+      <button id="assistent-schliessen" class="knopf leise klein"
+              title="Der Fortschritt bleibt erhalten">Später</button>
+    </header>
+    <div class="assistent-balken"><div id="assistent-fortschritt"></div></div>
+    <div class="assistent-koerper" id="assistent-koerper"></div>
+    <footer class="assistent-fuss">
+      <button id="assistent-zurueck" class="knopf leise">Zurück</button>
+      <div class="assistent-fuss-rechts">
+        <button id="assistent-ueberspringen" class="knopf leise">Überspringen</button>
+        <button id="assistent-weiter" class="knopf">Weiter</button>
+      </div>
+    </footer>
+  </div>
+</div>
 
 <div id="tost" class="tost"></div>
 <script src="app.js"></script>

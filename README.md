@@ -13,6 +13,8 @@ die vorhandenen abzulösen.
 
 ![Übersicht](docs/bilder/uebersicht.png)
 
+![Einrichtungsassistent](docs/bilder/assistent.png)
+
 ---
 
 ## Warum
@@ -29,6 +31,14 @@ Dieses Add-on legt all das an eine Stelle und gibt ihr eine Oberfläche.
 ---
 
 ## Features
+
+### 🧭 Einrichtungsassistent
+- Zehn Schritte beim ersten Start, später jederzeit wieder aufrufbar
+- Erklärt bei jedem Schritt das **Warum**, nicht nur das Feld
+- Fragt nach **Haustieren** und stellt die Melder in den betroffenen Räumen
+  entsprechend ein
+- Schaltet nie scharf: Am Ende läuft die Anlage im Trockenlauf
+- Speichert jeden Schritt sofort – abbrechen und später weitermachen
 
 ### 🛡️ Vollständige Zustandsmaschine
 - Ausgehverzögerung, Eintrittsverzögerung, Voralarm, Auslösung
@@ -208,7 +218,7 @@ anderthalb Metern unlesbar ist.
 python3 -m unittest discover -s tests
 ```
 
-108 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
+112 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
 echte Anlagen gescheitert sind – die Nacht mit 82 unterdrückten Bewegungen,
 das Cloud-Schloss, das zu spät meldet, die Anlage, die scharf stand, während
 die Familie schlief, und das Schloss, das dauerhaft „offen“ meldete

@@ -1,5 +1,44 @@
 # Änderungen
 
+## 1.7.0 – 18.09.2026
+
+**Ein Einrichtungsassistent in zehn Schritten.** Er läuft beim ersten Start
+von selbst an und ist danach über die Übersicht wieder erreichbar.
+
+Wichtiger als die Felder sind die Begründungen. Wer eine Alarmanlage zum
+ersten Mal einrichtet, weiß nicht, warum „nie scharf, solange jemand zu
+Hause ist" der Rettungsanker ist oder warum ein Schloss im Zustand
+`unlocked` nichts über die Tür aussagt. Genau diese Sätze stehen jetzt an
+der Stelle, an der die Entscheidung fällt – nicht im Handbuch, das man erst
+liest, wenn etwas schiefgegangen ist.
+
+Die Schritte:
+
+1. **Willkommen** – was Home Assistant hier kennt, in Zahlen
+2. **Vorhandene Automationen** – erkennen und die Einstellungen übernehmen
+3. **Personen** – woran die Anlage Anwesenheit erkennt
+4. **Melder** – nach Art gruppiert, sinnvoll vorausgewählt
+5. **Haustiere** – welche Räume das Tier darf, und was dann mit den
+   Bewegungsmeldern dort geschieht
+6. **Türschlösser** – der Ausweis beim Heimkommen
+7. **Zeiten** – Ausgeh- und Eintrittsverzögerung
+8. **Meldewege** – wer einen Push bekommt, Ansagen bei Rauch
+9. **Probe** – eine harmlose Testmeldung, kein kritischer Alarmton
+10. **Fertig** – Zusammenfassung und der Weg in den Echtbetrieb
+
+Zwei Festlegungen:
+
+* Der Assistent **schaltet nie scharf** und schaltet den Trockenlauf nicht
+  ab. Eine Einrichtung, die eine ungeprüfte scharfe Anlage hinterlässt,
+  wäre ein Fehler.
+* **Jeder Schritt speichert sofort.** Wer abbricht, macht später dort
+  weiter, wo er aufgehört hat – zehn Schritte schafft nicht jeder in einem
+  Zug.
+
+Der Haustier-Schritt bietet nur **Bewegungs- und Erschütterungsmelder** an.
+An einem Fensterkontakt läuft kein Hund vorbei, und ihn hier anzubieten
+lüde dazu ein, versehentlich die Außenhaut des Hauses abzuschalten.
+
 ## 1.6.2 – 18.09.2026
 
 **Fehlende Übersetzungen.** An vier Stellen schlugen rohe Schlüssel durch:

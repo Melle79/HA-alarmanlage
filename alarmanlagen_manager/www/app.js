@@ -1133,7 +1133,12 @@ function kaestchen(kasten, alle, gewaehlt, beiAenderung) {
     label.appendChild(knopf);
     const text = el('span');
     text.appendChild(document.createTextNode(eintrag.name));
-    text.appendChild(el('div', 'eid', eintrag.entity_id));
+    /* Die zweite Zeile nur, wenn sie etwas hinzufügt. Bei Räumen ist die
+     * "entity_id" der Raumname selbst – zweimal dasselbe untereinander
+     * liest sich wie ein Fehler. */
+    if (eintrag.entity_id && !eintrag.name.startsWith(eintrag.entity_id)) {
+      text.appendChild(el('div', 'eid', eintrag.entity_id));
+    }
     label.appendChild(text);
     kasten.appendChild(label);
   }
@@ -1640,6 +1645,651 @@ async function protokollLaden() {
 $('protokoll-neu').onclick = protokollLaden;
 $('protokoll-filter').onchange = protokollLaden;
 
+
+/* ===================================================================
+ * Der Einrichtungsassistent
+ *
+ * Er führt durch zehn Schritte, und jeder beantwortet **eine** Frage.
+ * Wichtiger als die Felder sind die Begründungen: Wer eine Alarmanlage
+ * zum ersten Mal einrichtet, weiß nicht, warum "nie scharf, solange
+ * jemand zu Hause ist" der Rettungsanker ist oder warum ein Schloss im
+ * Zustand "unlocked" nichts über die Tür aussagt. Genau diese Sätze
+ * stehen hier, an der Stelle, an der die Entscheidung fällt.
+ *
+ * Zwei Festlegungen:
+ *  - Der Assistent schaltet **nie** scharf und **nie** den Trockenlauf
+ *    ab. Eine Einrichtung, die am Ende eine scharfe Anlage hinterlässt,
+ *    die niemand geprüft hat, wäre ein Fehler.
+ *  - Jeder Schritt speichert sofort. Wer abbricht, macht später dort
+ *    weiter, wo er aufgehört hat.
+ * =================================================================== */
+
+const A = { schritt: 0, offen: false, daten: {} };
+
+function hinweiskasten(art, ueberschrift, text) {
+  const k = el('div', 'a-hinweis ' + art);
+  if (ueberschrift) k.appendChild(el('strong', null, ueberschrift));
+  k.appendChild(el('div', null, text));
+  return k;
+}
+
+function absatz(text) { return el('p', 'a-text', text); }
+
+function zahlfeldMit(beschriftung, wert, einheit, beiAenderung, hilfe) {
+  const label = el('label', 'a-zahl');
+  label.appendChild(el('span', 'a-zahl-titel', beschriftung));
+  const zeile = el('span', 'einheit');
+  const feld = el('input');
+  feld.type = 'number';
+  feld.min = '0';
+  feld.value = wert;
+  feld.onchange = () => beiAenderung(parseInt(feld.value, 10) || 0);
+  zeile.appendChild(feld);
+  zeile.appendChild(el('span', null, einheit));
+  label.appendChild(zeile);
+  if (hilfe) label.appendChild(el('small', null, hilfe));
+  return label;
+}
+
+const SCHRITTE = [
+
+/* ------------------------------------------------------------- 1 */
+{
+  id: 'willkommen',
+  titel: 'Willkommen',
+  weiter: 'Los geht’s',
+  ueberspringbar: false,
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'Dieser Assistent richtet die Alarmanlage in zehn Schritten ein. '
+      + 'Sie können jederzeit abbrechen – der Fortschritt bleibt erhalten.'));
+
+    const kandidaten = Z.auswahl?.melder || [];
+    const zahl = (art) => kandidaten.filter((m) => m.art === art).length;
+    const liste = el('ul', 'a-liste');
+    const zeile = (text) => liste.appendChild(el('li', null, text));
+    zeile(`${zahl('bewegung')} Bewegungsmelder gefunden`);
+    zeile(`${zahl('kontakt')} Tür- und Fensterkontakte`);
+    zeile(`${zahl('rauch')} Rauch- und Gasmelder`);
+    zeile(`${zahl('wasser')} Wassermelder`);
+    zeile(`${(Z.auswahl?.personen || []).length} Personen, `
+      + `${(Z.auswahl?.schloesser || []).length} Türschlösser`);
+    kasten.appendChild(el('h3', null, 'Was Home Assistant hier kennt'));
+    kasten.appendChild(liste);
+
+    kasten.appendChild(hinweiskasten('gut', 'Nichts geht schief',
+      'Der Assistent schaltet die Anlage nicht scharf. Sie läuft danach im '
+      + 'Trockenlauf: Sie rechnet und schreibt Protokoll, schickt aber nichts '
+      + 'hinaus. Scharf schalten Sie selbst, wenn Sie geprüft haben, dass '
+      + 'alles stimmt.'));
+  },
+},
+
+/* ------------------------------------------------------------- 2 */
+{
+  id: 'uebernahme',
+  titel: 'Haben Sie das schon mit Automationen gelöst?',
+  async vorbereiten() {
+    if (!A.daten.vorschlag) {
+      try { A.daten.vorschlag = await hole('api/uebernahme/vorschlag'); }
+      catch { A.daten.vorschlag = { automationen: [], konfig: null }; }
+    }
+  },
+  zeichnen(kasten) {
+    const v = A.daten.vorschlag || { automationen: [] };
+    const gefunden = v.automationen.filter((x) => x.vorschlagen);
+
+    if (!gefunden.length) {
+      kasten.appendChild(absatz(
+        'In Ihrer automations.yaml steht nichts, was nach einer Alarmanlage '
+        + 'aussieht. Dann bauen wir sie in den nächsten Schritten neu auf.'));
+      this.weiterText = 'Weiter';
+      return;
+    }
+
+    kasten.appendChild(absatz(
+      `${gefunden.length} Automationen sehen nach Alarmanlage aus. Der `
+      + 'Assistent kann sie auslesen und daraus die Einstellungen bauen – '
+      + 'Melder, Personen, Schlösser, Meldewege und die Verzögerungen.'));
+
+    const liste = el('div', 'a-kasten');
+    for (const a of gefunden.slice(0, 12)) {
+      liste.appendChild(el('div', 'a-zeile', a.alias));
+    }
+    if (gefunden.length > 12) {
+      liste.appendChild(el('div', 'a-zeile leise',
+        `und ${gefunden.length - 12} weitere`));
+    }
+    kasten.appendChild(liste);
+
+    const k = v.konfig || {};
+    kasten.appendChild(hinweiskasten('info', 'Daraus würde',
+      `${(k.melder || []).length} Melder · `
+      + `${(k.scharfschaltung?.personen || []).length} Personen · `
+      + `${(k.entschaerfung?.schloesser || []).length} Schlösser · `
+      + `${(k.eskalation?.einbruch?.alarm?.push || []).length} Push-Ziele`));
+
+    kasten.appendChild(hinweiskasten('', 'Die Automationen bleiben an',
+      'Übernommen werden nur die Einstellungen. Abgeschaltet wird nichts – '
+      + 'das machen Sie später selbst, wenn die neue Anlage sich bewährt hat.'));
+
+    const knopf = el('button', 'knopf', 'Einstellungen übernehmen');
+    knopf.onclick = async () => {
+      knopf.disabled = true;
+      await schicke('api/uebernahme', v.konfig);
+      await allesLaden();
+      A.daten.uebernommen = true;
+      tost('Übernommen.');
+      knopf.textContent = 'Übernommen ✓';
+    };
+    kasten.appendChild(knopf);
+  },
+},
+
+/* ------------------------------------------------------------- 3 */
+{
+  id: 'personen',
+  titel: 'Wer wohnt hier?',
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'An diesen Personen erkennt die Anlage, ob jemand zu Hause ist. Sind '
+      + 'alle weg, schaltet sie scharf; kommt jemand heim, entschärft sie.'));
+
+    const gewaehlt = new Set(Z.konfig.scharfschaltung.personen || []);
+    if (!gewaehlt.size) {
+      for (const p of Z.auswahl?.personen || []) gewaehlt.add(p.entity_id);
+    }
+    const kasten2 = el('div');
+    kaestchen(kasten2, Z.auswahl?.personen || [], [...gewaehlt], (auswahl) => {
+      A.daten.personen = auswahl;
+    });
+    A.daten.personen = [...gewaehlt];
+    kasten.appendChild(kasten2);
+
+    kasten.appendChild(hinweiskasten('warn', 'Nur „zu Hause“ zählt',
+      'Manche Ortungsquellen setzen unterwegs eigene Standzonen statt '
+      + '„abwesend“. Die Anlage prüft deshalb ausschließlich, ob jemand als '
+      + 'zu Hause gemeldet ist – alles andere gilt als weg.'));
+  },
+  async speichern() {
+    await schicke('api/konfig',
+      { scharfschaltung: { personen: A.daten.personen || [] } });
+  },
+},
+
+/* ------------------------------------------------------------- 4 */
+{
+  id: 'melder',
+  titel: 'Welche Melder sollen zählen?',
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'Vorgeschlagen ist, was Home Assistant als Bewegung, Kontakt, Rauch '
+      + 'oder Wasser führt. Was keine Geräteklasse hat, steht nicht zur '
+      + 'Auswahl – das sind fast immer Diagnosemelder.'));
+
+    const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
+    const brauchbar = (Z.auswahl?.melder || [])
+      .filter((m) => m.art !== 'sonstige');
+    const gewaehlt = new Set(drin.size
+      ? [...drin]
+      : brauchbar.map((m) => m.entity_id));
+
+    for (const [art, titel] of [['bewegung', 'Bewegung'],
+      ['kontakt', 'Türen und Fenster'], ['erschuetterung', 'Erschütterung'],
+      ['rauch', 'Rauch und Gas'], ['wasser', 'Wasser']]) {
+      const eigene = brauchbar.filter((m) => m.art === art);
+      if (!eigene.length) continue;
+      kasten.appendChild(el('h3', null, `${titel} (${eigene.length})`));
+      const k = el('div');
+      kaestchen(k, eigene, eigene.filter((m) => gewaehlt.has(m.entity_id))
+        .map((m) => m.entity_id), (auswahl) => {
+        for (const m of eigene) gewaehlt.delete(m.entity_id);
+        for (const e of auswahl) gewaehlt.add(e);
+        A.daten.melderauswahl = [...gewaehlt];
+      });
+      kasten.appendChild(k);
+    }
+    A.daten.melderauswahl = [...gewaehlt];
+
+    kasten.appendChild(hinweiskasten('', 'Rauch zählt immer',
+      'Rauch- und Wassermelder gelten rund um die Uhr, auch wenn die Anlage '
+      + 'entschärft ist. Bewegung und Kontakte zählen nur, wenn sie scharf ist.'));
+  },
+  async speichern() {
+    const gewaehlt = new Set(A.daten.melderauswahl || []);
+    const alt = new Map((Z.konfig.melder || []).map((m) => [m.entity, m]));
+    const neu = [];
+    for (const kandidat of Z.auswahl?.melder || []) {
+      if (!gewaehlt.has(kandidat.entity_id)) continue;
+      if (alt.has(kandidat.entity_id)) { neu.push(alt.get(kandidat.entity_id)); continue; }
+      const linie = kandidat.art === 'rauch' ? 'rauch'
+        : kandidat.art === 'wasser' ? 'wasser' : 'einbruch';
+      neu.push({
+        entity: kandidat.entity_id,
+        name: kandidat.name,
+        ort: Z.auswahl?.bereiche?.[kandidat.entity_id] || kandidat.name,
+        art: kandidat.art, linie, modi: [],
+        verzoegert: linie === 'einbruch',
+        ausloesezustand: 'on', aktiv: true,
+      });
+    }
+    const antwort = await schicke('api/melder', neu);
+    Z.konfig.melder = antwort.melder;
+  },
+},
+
+/* ------------------------------------------------------------- 5 */
+{
+  id: 'haustiere',
+  titel: 'Bleibt ein Tier im Haus, wenn Sie weg sind?',
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'Ein Hund oder eine Katze läuft an jedem Bewegungsmelder vorbei, den '
+      + 'sie erreichen. Dagegen hilft keine Empfindlichkeit, sondern eine '
+      + 'Entscheidung: Welche Räume darf das Tier?'));
+
+    const wahl = el('div', 'wahlgruppe');
+    const bauen = (wert, titel, hilfe) => {
+      const label = el('label', A.daten.tier === wert ? 'an' : '');
+      const knopf = el('input');
+      knopf.type = 'radio'; knopf.name = 'tier';
+      knopf.checked = A.daten.tier === wert;
+      knopf.onchange = () => { A.daten.tier = wert; zeichneSchritt(); };
+      label.appendChild(knopf);
+      label.appendChild(document.createTextNode(titel));
+      label.appendChild(el('small', null, hilfe));
+      wahl.appendChild(label);
+    };
+    bauen('nein', 'Nein, kein Tier im Haus',
+      'Alle Melder zählen, wie sie eingerichtet sind.');
+    bauen('ja', 'Ja, ein Tier bleibt da',
+      'Dann wählen Sie gleich die Räume aus, die es betreten darf.');
+    kasten.appendChild(wahl);
+
+    if (A.daten.tier !== 'ja') return;
+
+    /* Nur Melder, an denen ein Tier überhaupt vorbeilaufen kann. Ein
+     * Fensterkontakt interessiert den Hund nicht, und ihn hier anzubieten
+     * lädt nur dazu ein, versehentlich die Außenhaut abzuschalten. */
+    const bereiche = Z.auswahl?.bereiche || {};
+    const betroffen = (Z.konfig.melder || []).filter((m) =>
+      m.linie === 'einbruch' && ['bewegung', 'erschuetterung'].includes(m.art));
+    const raeume = new Map();
+    for (const m of betroffen) {
+      const raum = bereiche[m.entity] || m.ort || m.name || m.entity;
+      if (!raeume.has(raum)) raeume.set(raum, []);
+      raeume.get(raum).push(m);
+    }
+
+    kasten.appendChild(el('h3', null, 'Diese Räume darf das Tier'));
+    if (!raeume.size) {
+      kasten.appendChild(el('div', 'leer',
+        'Es ist kein Bewegungsmelder eingerichtet, an dem ein Tier '
+        + 'vorbeilaufen könnte.'));
+    }
+    const k = el('div');
+    A.daten.tierraeume = A.daten.tierraeume || [];
+    kaestchen(k, [...raeume.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'de'))
+      .map(([raum, melder]) => ({
+        entity_id: raum,
+        name: raum + (melder.length > 1 ? ` (${melder.length} Melder)` : ''),
+      })), A.daten.tierraeume, (auswahl) => { A.daten.tierraeume = auswahl; });
+    kasten.appendChild(k);
+
+    kasten.appendChild(hinweiskasten('', 'Nur Bewegungsmelder',
+      'Tür- und Fensterkontakte stehen hier nicht zur Wahl – an denen läuft '
+      + 'kein Tier vorbei, und die Außenhaut des Hauses soll bewacht bleiben. '
+      + 'Wo Home Assistant keinen Bereich kennt, steht der Name des Melders.'));
+
+    const wie = el('div', 'wahlgruppe');
+    const wieBauen = (wert, titel, hilfe) => {
+      const label = el('label', (A.daten.tierart || 'urlaub') === wert ? 'an' : '');
+      const knopf = el('input');
+      knopf.type = 'radio'; knopf.name = 'tierart';
+      knopf.checked = (A.daten.tierart || 'urlaub') === wert;
+      knopf.onchange = () => { A.daten.tierart = wert; zeichneSchritt(); };
+      label.appendChild(knopf);
+      label.appendChild(document.createTextNode(titel));
+      label.appendChild(el('small', null, hilfe));
+      wie.appendChild(label);
+    };
+    kasten.appendChild(el('h3', null, 'Und dann?'));
+    wieBauen('urlaub', 'Nur im Urlaub zählen lassen',
+      'Wenn das Tier im Urlaub nicht im Haus ist, bleibt der Raum dann '
+      + 'bewacht. Im Alltag zählt er nicht.');
+    wieBauen('aus', 'Ganz abschalten',
+      'Der Raum ist dauerhaft unbewacht – der Weg dorthin aber weiterhin.');
+    kasten.appendChild(wie);
+  },
+  async speichern() {
+    if (A.daten.tier !== 'ja' || !(A.daten.tierraeume || []).length) return;
+    const bereiche = Z.auswahl?.bereiche || {};
+    const raeume = new Set(A.daten.tierraeume);
+    const melder = (Z.konfig.melder || []).map((m) => {
+      if (m.linie !== 'einbruch') return m;
+      if (!['bewegung', 'erschuetterung'].includes(m.art)) return m;
+      const raum = bereiche[m.entity] || m.ort || m.name || m.entity;
+      if (!raeume.has(raum)) return m;
+      return (A.daten.tierart || 'urlaub') === 'aus'
+        ? { ...m, aktiv: false }
+        : { ...m, modi: ['urlaub'] };
+    });
+    const antwort = await schicke('api/melder', melder);
+    Z.konfig.melder = antwort.melder;
+  },
+},
+
+/* ------------------------------------------------------------- 6 */
+{
+  id: 'schloesser',
+  titel: 'Woran erkennt die Anlage, dass Sie es sind?',
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'Wer die Haustür aufschließt, hat sich am Schloss ausgewiesen – das '
+      + 'ist der Nachweis, nicht der Bewegungsmelder danach. Beim '
+      + 'Aufschließen entschärft die Anlage.'));
+
+    const gewaehlt = new Set(Z.konfig.entschaerfung.schloesser || []);
+    if (!gewaehlt.size) {
+      for (const l of Z.auswahl?.schloesser || []) gewaehlt.add(l.entity_id);
+    }
+    const k = el('div');
+    kaestchen(k, Z.auswahl?.schloesser || [], [...gewaehlt], (auswahl) => {
+      A.daten.schloesser = auswahl;
+    });
+    A.daten.schloesser = [...gewaehlt];
+    kasten.appendChild(k);
+
+    kasten.appendChild(hinweiskasten('warn', 'Ruhig alle auswählen',
+      'Mehrere Schlossquellen nebeneinander sind kein Fehler, sondern Absicht: '
+      + 'Sie sind sich selten einig. Ein Cloud-Schloss hinkt hinterher oder '
+      + 'schweigt stundenlang, während ein lokales sofort meldet. Wer sich '
+      + 'für eine entscheidet, entscheidet sich irgendwann falsch – und der '
+      + 'Alarm geht los, während jemand mit dem Schlüssel in der Tür steht.'));
+
+    kasten.appendChild(hinweiskasten('', '„Aufgeschlossen“ heißt nicht „offen“',
+      'Viele Schlösser melden dauerhaft „unlocked“, wenn nur der Riegel nicht '
+      + 'vorgeschoben ist. Die Anlage weiß das: Das Schloss hält nur das '
+      + 'Wieder-Scharfschalten auf, nachdem es selbst entschärft hat.'));
+  },
+  async speichern() {
+    await schicke('api/konfig',
+      { entschaerfung: { schloesser: A.daten.schloesser || [] } });
+  },
+},
+
+/* ------------------------------------------------------------- 7 */
+{
+  id: 'zeiten',
+  titel: 'Wie viel Zeit brauchen Sie?',
+  zeichnen(kasten) {
+    const modus = Z.konfig.modi.abwesend;
+    A.daten.ausgehzeit ??= modus.ausgehzeit ?? 60;
+    A.daten.eintrittszeit ??= modus.eintrittszeit ?? 45;
+
+    kasten.appendChild(zahlfeldMit('Zeit zum Verlassen des Hauses',
+      A.daten.ausgehzeit, 'Sekunden',
+      (w) => { A.daten.ausgehzeit = w; },
+      'Nach dem Scharfschalten zählen die Melder erst nach dieser Zeit. '
+      + 'Solange sie läuft, löst niemand aus – man geht ja am eigenen '
+      + 'Bewegungsmelder vorbei.'));
+
+    kasten.appendChild(zahlfeldMit('Zeit zum Entschärfen beim Heimkommen',
+      A.daten.eintrittszeit, 'Sekunden',
+      (w) => { A.daten.eintrittszeit = w; },
+      'Springt ein Melder an, wartet die Anlage so lange, bevor sie Alarm '
+      + 'schlägt.'));
+
+    kasten.appendChild(hinweiskasten('warn', 'Lieber großzügig',
+      'Die Standortortung hängt dem Heimkommen regelmäßig nach – sie merkt '
+      + 'oft erst eine halbe Minute später, dass jemand da ist. 45 Sekunden '
+      + 'sind ein guter Anfang; zu knapp bemessen alarmiert die Anlage die '
+      + 'eigene Familie.'));
+  },
+  async speichern() {
+    const modi = {};
+    for (const [k, m] of Object.entries(Z.konfig.modi)) {
+      if (!m.aktiv) continue;
+      modi[k] = { ausgehzeit: A.daten.ausgehzeit,
+        eintrittszeit: A.daten.eintrittszeit };
+    }
+    await schicke('api/konfig', { modi });
+  },
+},
+
+/* ------------------------------------------------------------- 8 */
+{
+  id: 'meldewege',
+  titel: 'Wer soll es erfahren?',
+  zeichnen(kasten) {
+    const push = (Z.auswahl?.meldewege?.push || [])
+      .map((d) => ({ entity_id: d.dienst, name: d.name }));
+    const sprache = (Z.auswahl?.meldewege?.sprache || [])
+      .map((d) => ({ entity_id: d.dienst, name: d.name }));
+
+    const vorhanden = Z.konfig.eskalation.einbruch.alarm.push || [];
+    A.daten.push = A.daten.push
+      || (vorhanden.length ? vorhanden : push.map((p) => p.entity_id));
+
+    kasten.appendChild(el('h3', null, 'Push aufs Telefon bei Alarm'));
+    const k1 = el('div');
+    kaestchen(k1, push, A.daten.push, (a) => { A.daten.push = a; });
+    kasten.appendChild(k1);
+
+    kasten.appendChild(hinweiskasten('warn', 'Kritischer Push',
+      'Der Alarm geht als kritischer Push hinaus – der durchbricht den '
+      + 'Fokusmodus. Eine normale Meldung bleibt nachts liegen, genau dann, '
+      + 'wenn sie gebraucht wird.'));
+
+    if (sprache.length) {
+      const vorhandenA = Z.konfig.eskalation.rauch.alarm.alexa || [];
+      A.daten.alexa = A.daten.alexa
+        || (vorhandenA.length ? vorhandenA : sprache.map((s) => s.entity_id));
+      kasten.appendChild(el('h3', null, 'Ansage bei Rauch'));
+      const k2 = el('div');
+      kaestchen(k2, sprache, A.daten.alexa, (a) => { A.daten.alexa = a; });
+      kasten.appendChild(k2);
+      kasten.appendChild(hinweiskasten('', 'Nur bei Rauch',
+        'Ansagen sind bei Rauch sinnvoll – da zählt jede Sekunde und es ist '
+        + 'egal, wer im Haus ist. Bei Einbruch bleibt es beim Push: Zehn '
+        + 'sprechende Lautsprecher bei jedem Fehlalarm sind der sicherste '
+        + 'Weg, eine Alarmanlage wieder abzuschalten.'));
+    }
+  },
+  async speichern() {
+    await schicke('api/konfig', {
+      eskalation: {
+        einbruch: {
+          alarm: { push: A.daten.push || [], kritisch: true },
+          entwarnung: { push: A.daten.push || [], kritisch: false },
+        },
+        rauch: {
+          alarm: { push: A.daten.push || [], kritisch: true,
+            alexa: A.daten.alexa || [] },
+        },
+      },
+    });
+  },
+},
+
+/* ------------------------------------------------------------- 9 */
+{
+  id: 'probe',
+  titel: 'Kommt die Meldung an?',
+  zeichnen(kasten) {
+    kasten.appendChild(absatz(
+      'Ob ein Push wirklich durchkommt, will man nicht im Ernstfall '
+      + 'herausfinden. Der Test schickt eine harmlose Meldung – keinen '
+      + 'kritischen Alarmton.'));
+
+    const knopf = el('button', 'knopf', 'Testmeldung senden');
+    knopf.onclick = async () => {
+      knopf.disabled = true;
+      knopf.textContent = 'Wird gesendet …';
+      const antwort = await schicke('api/probe',
+        { linie: 'einbruch', stufe: 'entwarnung' });
+      const g = antwort.getan || {};
+      knopf.disabled = false;
+      knopf.textContent = 'Nochmal senden';
+      const ergebnis = el('div', 'a-ergebnis');
+      if (g.unterdrueckt) {
+        ergebnis.appendChild(hinweiskasten('warn', 'Trockenlauf',
+          'Es ging nichts hinaus – die Anlage steht im Probebetrieb. In Home '
+          + 'Assistant liegt aber eine Meldung, die zeigt, was gesagt worden '
+          + 'wäre.'));
+      } else {
+        ergebnis.appendChild(hinweiskasten('gut',
+          `An ${g.push.length} Telefone geschickt`,
+          'Schauen Sie nach. Kam nichts an, prüfen Sie in der '
+          + 'Home-Assistant-App, ob Benachrichtigungen erlaubt sind.'));
+      }
+      kasten.appendChild(ergebnis);
+    };
+    kasten.appendChild(knopf);
+
+    kasten.appendChild(hinweiskasten('', 'Später jederzeit wieder',
+      'Unter „Meldewege“ lässt sich jede Stufe einzeln auslösen – auch der '
+      + 'kritische Alarmton, wenn Sie ihn einmal hören wollen.'));
+  },
+},
+
+/* ------------------------------------------------------------ 10 */
+{
+  id: 'fertig',
+  titel: 'Fertig',
+  weiter: 'Assistenten schließen',
+  ueberspringbar: false,
+  /* Frisch holen, nicht aus dem Gedächtnis erzählen: Die Schritte davor
+   * haben serverseitig gespeichert, die lokale Kopie hinkt hinterher. Eine
+   * Zusammenfassung, die "0 Personen" behauptet, während fünf gespeichert
+   * sind, ist schlimmer als gar keine. */
+  async vorbereiten() {
+    try { Z.konfig = await hole('api/konfig'); } catch { /* dann eben alt */ }
+  },
+  zeichnen(kasten) {
+    const melder = Z.konfig.melder || [];
+    const zahl = (l) => melder.filter((m) => m.linie === l && m.aktiv !== false).length;
+
+    kasten.appendChild(absatz('Das ist Ihre Anlage:'));
+    const liste = el('ul', 'a-liste');
+    liste.appendChild(el('li', null,
+      `${zahl('einbruch')} Melder auf der Einbruchlinie`));
+    liste.appendChild(el('li', null,
+      `${zahl('rauch')} Rauchmelder, rund um die Uhr`));
+    liste.appendChild(el('li', null,
+      `${(Z.konfig.scharfschaltung.personen || []).length} Personen, `
+      + `${(Z.konfig.entschaerfung.schloesser || []).length} Schlösser`));
+    liste.appendChild(el('li', null,
+      `${Z.konfig.modi.abwesend.ausgehzeit} s zum Verlassen, `
+      + `${Z.konfig.modi.abwesend.eintrittszeit} s zum Entschärfen`));
+    kasten.appendChild(liste);
+
+    kasten.appendChild(hinweiskasten('warn', 'Die Anlage läuft im Trockenlauf',
+      'Sie rechnet alles mit und schreibt Protokoll, schickt aber nichts '
+      + 'hinaus. Lassen Sie sie ein paar Tage so laufen und sehen Sie ins '
+      + 'Protokoll: Steht dort, was Sie erwarten? Dann schalten Sie den '
+      + 'Trockenlauf auf der Übersicht ab.'));
+
+    kasten.appendChild(hinweiskasten('', 'Was Sie danach noch tun können',
+      'Melder feiner einstellen (in welchen Modi sie gelten, Mindestdauer, '
+      + 'Ruhequellen gegen bekannte Fehlauslöser), weitere Meldewege wie '
+      + 'Licht und Sirene, und die Dashboard-Karte ins Dashboard legen.'));
+  },
+},
+];
+
+/* ------------------------------------------------------------ Steuerung */
+
+function assistentOeffnen(schritt) {
+  A.offen = true;
+  A.schritt = Math.max(0, Math.min(schritt ?? 0, SCHRITTE.length - 1));
+  $('assistent').classList.remove('versteckt');
+  document.body.classList.add('mit-assistent');
+  zeichneSchritt();
+}
+
+async function assistentSchliessen(fertig) {
+  A.offen = false;
+  $('assistent').classList.add('versteckt');
+  document.body.classList.remove('mit-assistent');
+  await schicke('api/einrichtung',
+    { schritt: A.schritt, abgeschlossen: !!fertig });
+  await allesLaden();
+  melderZeichnen(); vorschlaegeZeichnen(); modiZeichnen(); linienZeichnen();
+  schaltungZeichnen(); meldewegeZeichnen(); einrichtungsstandZeichnen();
+}
+
+async function zeichneSchritt() {
+  const s = SCHRITTE[A.schritt];
+  $('assistent-schritt').textContent =
+    `Schritt ${A.schritt + 1} von ${SCHRITTE.length}`;
+  $('assistent-titel').textContent = s.titel;
+  $('assistent-fortschritt').style.width =
+    `${((A.schritt + 1) / SCHRITTE.length) * 100}%`;
+
+  const kasten = $('assistent-koerper');
+  kasten.textContent = '';
+  kasten.appendChild(el('div', 'leer', 'einen Augenblick …'));
+  if (s.vorbereiten) await s.vorbereiten();
+  kasten.textContent = '';
+  s.zeichnen(kasten);
+  kasten.scrollTop = 0;
+
+  $('assistent-zurueck').style.visibility = A.schritt ? '' : 'hidden';
+  $('assistent-ueberspringen').style.display =
+    s.ueberspringbar === false ? 'none' : '';
+  $('assistent-weiter').textContent =
+    s.weiterText || s.weiter || 'Weiter';
+}
+
+async function assistentWeiter(speichern) {
+  const s = SCHRITTE[A.schritt];
+  const knopf = $('assistent-weiter');
+  knopf.disabled = true;
+  try {
+    if (speichern && s.speichern) await s.speichern();
+  } catch (fehler) {
+    tost('Nicht gespeichert: ' + fehler.message, true);
+    knopf.disabled = false;
+    return;
+  }
+  knopf.disabled = false;
+  if (A.schritt >= SCHRITTE.length - 1) { assistentSchliessen(true); return; }
+  A.schritt += 1;
+  await schicke('api/einrichtung', { schritt: A.schritt });
+  zeichneSchritt();
+}
+
+$('assistent-weiter').onclick = () => assistentWeiter(true);
+$('assistent-ueberspringen').onclick = () => assistentWeiter(false);
+$('assistent-zurueck').onclick = () => {
+  if (A.schritt > 0) { A.schritt -= 1; zeichneSchritt(); }
+};
+$('assistent-schliessen').onclick = () => assistentSchliessen(false);
+$('einrichtung-starten').onclick = () =>
+  assistentOeffnen(Z.konfig.einrichtung?.abgeschlossen
+    ? 0 : Z.konfig.einrichtung?.schritt);
+
+function einrichtungsstandZeichnen() {
+  const e = Z.konfig.einrichtung || {};
+  const stand = $('einrichtung-stand');
+  const knopf = $('einrichtung-starten');
+  if (!stand) return;
+  if (e.abgeschlossen) {
+    stand.textContent = 'Die Einrichtung ist abgeschlossen. Der Assistent '
+      + 'führt sie bei Bedarf noch einmal durch – er ändert nur, was Sie '
+      + 'bestätigen.';
+    knopf.textContent = 'Einrichtung wiederholen';
+    knopf.className = 'knopf leise';
+  } else {
+    stand.textContent = `Die Einrichtung ist noch nicht abgeschlossen `
+      + `(Schritt ${(e.schritt || 0) + 1} von ${SCHRITTE.length}).`;
+    knopf.textContent = 'Einrichtung fortsetzen';
+    knopf.className = 'knopf';
+  }
+}
+
 /* ---------------------------------------------------------------- Lauf */
 
 async function statusLaden() {
@@ -1680,7 +2330,16 @@ window.addEventListener('hashchange', reiterAusAdresse);
     linienZeichnen();
     schaltungZeichnen();
     meldewegeZeichnen();
+    einrichtungsstandZeichnen();
     reiterAusAdresse();
+    /* Beim allerersten Start führt der Assistent von selbst. Wer ihn
+     * weggeklickt hat, findet ihn auf der Übersicht wieder – aufdrängen
+     * soll er sich nur einmal. */
+    if (!Z.konfig.einrichtung?.abgeschlossen
+        && !(Z.konfig.einrichtung?.schritt > 0)
+        && !(Z.konfig.melder || []).length) {
+      assistentOeffnen(0);
+    }
   } catch (fehler) {
     tost('Start fehlgeschlagen: ' + fehler.message, true);
   }

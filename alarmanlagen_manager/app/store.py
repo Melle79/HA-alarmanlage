@@ -202,6 +202,16 @@ DEFAULTS = {
             "entwarnung": dict(_stufe(), aktiv=False),
         },
     },
+    # Der Einrichtungsassistent. Er läuft beim ersten Start von selbst an
+    # und ist danach über die Übersicht wieder erreichbar.
+    "einrichtung": {
+        "abgeschlossen": False,
+        # Wo der Benutzer stehengeblieben ist. Wer den Assistenten
+        # schließt, soll dort weitermachen, wo er aufgehört hat - eine
+        # Einrichtung in zehn Schritten schafft nicht jeder in einem Zug.
+        "schritt": 0,
+        "uebersprungen": [],
+    },
     # Wird beim ersten Lauf von der Übernahme gefüllt und danach nur noch
     # angezeigt: welche Automationen dieses Add-on ersetzt.
     "uebernahme": {
