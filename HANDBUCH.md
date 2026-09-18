@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.7.0.
+Für Home Assistant. Stand: Fassung 1.7.2.
 
 ---
 
@@ -93,6 +93,17 @@ bestätigen.
 | 8 | Meldewege – Push, Ansagen bei Rauch |
 | 9 | Eine harmlose Testmeldung |
 | 10 | Zusammenfassung und der Weg in den Echtbetrieb |
+
+**Auch eine eingerichtete Anlage darf hindurch.** Der Assistent zeigt dann
+überall, was schon eingestellt ist – die gewählten Personen, die
+eingerichteten Melder, die Haustier-Räume, die Zeiten und die Meldewege. Wer
+einmal durchklickt, ohne etwas zu ändern, ändert nichts. Melder, die Home
+Assistant gerade nicht kennt, stehen mit dem Zusatz *(nicht gefunden)* in
+der Liste und bleiben erhalten.
+
+Die einzige Ausnahme ist Schritt 2: Ein erneutes Übernehmen aus den
+Automationen **ersetzt** die Einstellungen. Der Schritt sagt das und fragt
+vorher nach.
 
 Zwei Dinge, auf die Sie sich verlassen können:
 

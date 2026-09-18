@@ -294,9 +294,21 @@ label > input, label > select { display: block; margin-top: 4px; }
 .kaestchenliste label {
   color: var(--text); font-size: 14px;
   display: flex; gap: 8px; align-items: center; cursor: pointer;
+  min-width: 0;
 }
-.kaestchenliste input { margin: 0; }
-.kaestchenliste .eid { color: var(--text-leise); font-size: 11px; }
+.kaestchenliste input { margin: 0; flex: 0 0 auto; }
+/* Ohne minmax(0) und die Ellipse laufen lange Entitätsnamen in die
+   Nachbarspalte - und in einer Rasterspalte sieht man das erst, wenn
+   sie voll ist. */
+.kaestchenliste label > span { min-width: 0; }
+/* Ein Meldername kann eine ganze entity_id sein, wenn Home Assistant
+   keinen Anzeigenamen kennt. Der bricht sonst nicht und schiebt sich in
+   die Nachbarspalte. */
+.kaestchenliste label > span { overflow-wrap: anywhere; }
+.kaestchenliste .eid {
+  color: var(--text-leise); font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .chipliste { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {

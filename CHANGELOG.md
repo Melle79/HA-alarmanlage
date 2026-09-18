@@ -1,5 +1,34 @@
 # Änderungen
 
+## 1.7.2 – 18.09.2026
+
+**Der Assistent taugt jetzt auch für eine eingerichtete Anlage.** Gefunden
+beim Durchlaufen auf einer Anlage, die schon lief – und der erste Befund war
+ein Datenverlust.
+
+* **Der Melder-Schritt löschte, was er nicht kannte.** Angeboten wurde nur,
+  was Home Assistant als Melder führt. Ein von Hand angelegter Melder, einer
+  ohne Geräteklasse oder einer, dessen Gerät gerade nicht erreichbar ist,
+  stand nicht zur Wahl – und verschwand beim Weiterklicken. Die Liste ist
+  jetzt die **Vereinigung** aus Vorschlägen und Eingerichtetem; was nicht
+  gefunden wurde, steht mit dem Zusatz „(nicht gefunden)“ drin und bleibt,
+  solange der Haken steht. Eine letzte Gruppe *Sonstige* fängt auf, was in
+  keine Art passt – vorher wäre so ein Melder angehakt und unsichtbar
+  gewesen.
+* **Der Haustier-Schritt erkennt den Bestand.** Stehen Melder schon auf „nur
+  im Urlaub“ oder abgeschaltet, sind die passende Antwort und die Räume
+  vorausgewählt. Vorher stand dort keine der beiden Antworten, und wer
+  arglos weiterklickte, hob die Einstellung auf. Und er nimmt zurück, was er
+  selbst gesetzt hat: Wer einen Raum abwählt, bekommt ihn frei – eine von
+  Hand gesetzte Modusliste bleibt unberührt.
+* **Der Übernahme-Schritt warnt.** Stehen schon Melder da, sagt er, dass ein
+  erneutes Übernehmen sie ersetzt, und fragt vor dem Ausführen nach.
+* Lange Meldernamen liefen in die Nachbarspalte.
+
+Ein vollständiger Durchlauf auf einer eingerichteten Anlage ändert damit
+nichts – Melder, Ruhequellen, Modi und Meldewege stehen hinterher, wie sie
+vorher standen.
+
 ## 1.7.1 – 18.09.2026
 
 Eine Anlage, in der schon Melder stehen, gilt als eingerichtet – auch wenn

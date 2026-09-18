@@ -1747,10 +1747,21 @@ const SCHRITTE = [
       return;
     }
 
+    const schonDa = (Z.konfig.melder || []).length;
+
     kasten.appendChild(absatz(
       `${gefunden.length} Automationen sehen nach Alarmanlage aus. Der `
       + 'Assistent kann sie auslesen und daraus die Einstellungen bauen – '
       + 'Melder, Personen, Schlösser, Meldewege und die Verzögerungen.'));
+
+    if (schonDa) {
+      kasten.appendChild(hinweiskasten('warn', 'Ihre Anlage ist schon eingerichtet',
+        `Hier stehen bereits ${schonDa} Melder. Ein erneutes Übernehmen `
+        + 'ersetzt Melder, Personen, Schlösser und Meldewege durch das, was '
+        + 'in den Automationen steht – von Hand nachgeschärfte Einstellungen '
+        + 'wie Ruhequellen oder Modi gehen dabei verloren. Im Zweifel diesen '
+        + 'Schritt überspringen.'));
+    }
 
     const liste = el('div', 'a-kasten');
     for (const a of gefunden.slice(0, 12)) {
@@ -1773,8 +1784,11 @@ const SCHRITTE = [
       'Übernommen werden nur die Einstellungen. Abgeschaltet wird nichts – '
       + 'das machen Sie später selbst, wenn die neue Anlage sich bewährt hat.'));
 
-    const knopf = el('button', 'knopf', 'Einstellungen übernehmen');
+    const knopf = el('button', schonDa ? 'knopf gefahr' : 'knopf',
+      schonDa ? 'Trotzdem übernehmen und ersetzen' : 'Einstellungen übernehmen');
     knopf.onclick = async () => {
+      if (schonDa && !confirm(`Das ersetzt die ${schonDa} eingerichteten `
+        + 'Melder und alle daran hängenden Einstellungen. Fortfahren?')) return;
       knopf.disabled = true;
       await schicke('api/uebernahme', v.konfig);
       await allesLaden();
@@ -1821,6 +1835,31 @@ const SCHRITTE = [
 {
   id: 'melder',
   titel: 'Welche Melder sollen zählen?',
+  /* Die angebotene Liste ist die Vereinigung aus dem, was Home Assistant
+   * als Melder führt, und dem, was schon eingerichtet ist.
+   *
+   * Ohne die zweite Hälfte verschwindet stillschweigend jeder Melder, den
+   * die Kandidatenliste nicht kennt: ein von Hand angelegter, einer ohne
+   * Geräteklasse, oder einer, dessen Gerät gerade nicht erreichbar ist.
+   * Ein Assistent, den man aus Neugier öffnet, darf die Anlage nicht
+   * stillschweigend verkleinern. */
+  auswahlliste() {
+    const eingerichtet = Z.konfig.melder || [];
+    const liste = (Z.auswahl?.melder || []).filter((m) => m.art !== 'sonstige');
+    const bekannt = new Set(liste.map((m) => m.entity_id));
+    for (const m of eingerichtet) {
+      if (bekannt.has(m.entity)) continue;
+      const vorhanden = (Z.auswahl?.melder || [])
+        .find((k) => k.entity_id === m.entity);
+      liste.push({
+        entity_id: m.entity,
+        name: m.name + (vorhanden ? '' : ' (nicht gefunden)'),
+        art: m.art || 'bewegung',
+        nurEingerichtet: true,
+      });
+    }
+    return liste;
+  },
   zeichnen(kasten) {
     kasten.appendChild(absatz(
       'Vorgeschlagen ist, was Home Assistant als Bewegung, Kontakt, Rauch '
@@ -1828,16 +1867,24 @@ const SCHRITTE = [
       + 'Auswahl – das sind fast immer Diagnosemelder.'));
 
     const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
-    const brauchbar = (Z.auswahl?.melder || [])
-      .filter((m) => m.art !== 'sonstige');
+    const angeboten = this.auswahlliste();
     const gewaehlt = new Set(drin.size
       ? [...drin]
-      : brauchbar.map((m) => m.entity_id));
+      : angeboten.map((m) => m.entity_id));
 
-    for (const [art, titel] of [['bewegung', 'Bewegung'],
+    /* Die letzte Gruppe fängt auf, was in keine der Arten passt. Ohne sie
+     * stünde ein eingerichteter Melder mit ungewohnter Art zwar in der
+     * Auswahl, wäre aber nirgends zu sehen – angehakt und unerreichbar. */
+    const gruppen = [['bewegung', 'Bewegung'],
       ['kontakt', 'Türen und Fenster'], ['erschuetterung', 'Erschütterung'],
-      ['rauch', 'Rauch und Gas'], ['wasser', 'Wasser']]) {
-      const eigene = brauchbar.filter((m) => m.art === art);
+      ['rauch', 'Rauch und Gas'], ['wasser', 'Wasser']];
+    const bekannteArten = new Set(gruppen.map(([a]) => a));
+    gruppen.push(['sonstige', 'Sonstige']);
+
+    for (const [art, titel] of gruppen) {
+      const eigene = art === 'sonstige'
+        ? angeboten.filter((m) => !bekannteArten.has(m.art))
+        : angeboten.filter((m) => m.art === art);
       if (!eigene.length) continue;
       kasten.appendChild(el('h3', null, `${titel} (${eigene.length})`));
       const k = el('div');
@@ -1851,6 +1898,15 @@ const SCHRITTE = [
     }
     A.daten.melderauswahl = [...gewaehlt];
 
+    const fremd = angeboten.filter((m) => m.nurEingerichtet);
+    if (fremd.length) {
+      kasten.appendChild(hinweiskasten('info',
+        `${fremd.length} Melder sind schon eingerichtet`,
+        'Sie stehen nicht in der Vorschlagsliste von Home Assistant – etwa '
+        + 'weil sie von Hand angelegt wurden oder das Gerät gerade nicht '
+        + 'erreichbar ist. Sie bleiben, solange der Haken steht.'));
+    }
+
     kasten.appendChild(hinweiskasten('', 'Rauch zählt immer',
       'Rauch- und Wassermelder gelten rund um die Uhr, auch wenn die Anlage '
       + 'entschärft ist. Bewegung und Kontakte zählen nur, wenn sie scharf ist.'));
@@ -1859,8 +1915,10 @@ const SCHRITTE = [
     const gewaehlt = new Set(A.daten.melderauswahl || []);
     const alt = new Map((Z.konfig.melder || []).map((m) => [m.entity, m]));
     const neu = [];
-    for (const kandidat of Z.auswahl?.melder || []) {
+    for (const kandidat of this.auswahlliste()) {
       if (!gewaehlt.has(kandidat.entity_id)) continue;
+      /* Ein schon eingerichteter Melder wird unverändert übernommen –
+       * mit Ort, Linie, Modi, Ruhequelle und allem, was daran hängt. */
       if (alt.has(kandidat.entity_id)) { neu.push(alt.get(kandidat.entity_id)); continue; }
       const linie = kandidat.art === 'rauch' ? 'rauch'
         : kandidat.art === 'wasser' ? 'wasser' : 'einbruch';
@@ -1882,6 +1940,32 @@ const SCHRITTE = [
 {
   id: 'haustiere',
   titel: 'Bleibt ein Tier im Haus, wenn Sie weg sind?',
+  /* Was schon eingestellt ist, muss der Assistent wiedererkennen - sonst
+   * steht bei einer eingerichteten Anlage keine der beiden Antworten an,
+   * und wer arglos weiterklickt, hebt die Einstellung auf. */
+  vorbereiten() {
+    if (A.daten.tier) return;
+    const bereiche = Z.auswahl?.bereiche || {};
+    const betroffen = (Z.konfig.melder || []).filter((m) =>
+      m.linie === 'einbruch' && ['bewegung', 'erschuetterung'].includes(m.art));
+    const raum = (m) => bereiche[m.entity] || m.ort || m.name || m.entity;
+
+    const nurUrlaub = betroffen.filter((m) =>
+      (m.modi || []).length === 1 && m.modi[0] === 'urlaub');
+    const abgeschaltet = betroffen.filter((m) => m.aktiv === false);
+
+    if (nurUrlaub.length) {
+      A.daten.tier = 'ja';
+      A.daten.tierart = 'urlaub';
+      A.daten.tierraeume = [...new Set(nurUrlaub.map(raum))];
+    } else if (abgeschaltet.length) {
+      A.daten.tier = 'ja';
+      A.daten.tierart = 'aus';
+      A.daten.tierraeume = [...new Set(abgeschaltet.map(raum))];
+    } else {
+      A.daten.tier = 'nein';
+    }
+  },
   zeichnen(kasten) {
     kasten.appendChild(absatz(
       'Ein Hund oder eine Katze läuft an jedem Bewegungsmelder vorbei, den '
@@ -1963,17 +2047,29 @@ const SCHRITTE = [
     kasten.appendChild(wie);
   },
   async speichern() {
-    if (A.daten.tier !== 'ja' || !(A.daten.tierraeume || []).length) return;
+    if (!A.daten.tier) return;
     const bereiche = Z.auswahl?.bereiche || {};
-    const raeume = new Set(A.daten.tierraeume);
+    const raeume = new Set(A.daten.tier === 'ja'
+      ? (A.daten.tierraeume || []) : []);
+    /* Was der Assistent selbst gesetzt hat, nimmt er auch wieder zurück:
+     * Wer einen Raum abwählt, bekommt ihn frei. Angefasst wird aber nur,
+     * was genau nach dieser Einstellung aussieht - eine von Hand gesetzte
+     * Modusliste mit drei Einträgen bleibt unberührt. */
     const melder = (Z.konfig.melder || []).map((m) => {
       if (m.linie !== 'einbruch') return m;
       if (!['bewegung', 'erschuetterung'].includes(m.art)) return m;
       const raum = bereiche[m.entity] || m.ort || m.name || m.entity;
-      if (!raeume.has(raum)) return m;
-      return (A.daten.tierart || 'urlaub') === 'aus'
-        ? { ...m, aktiv: false }
-        : { ...m, modi: ['urlaub'] };
+      const soll = raeume.has(raum);
+      const istUrlaub = (m.modi || []).length === 1 && m.modi[0] === 'urlaub';
+      const istAus = m.aktiv === false;
+      if (soll) {
+        return (A.daten.tierart || 'urlaub') === 'aus'
+          ? { ...m, aktiv: false, modi: istUrlaub ? [] : (m.modi || []) }
+          : { ...m, modi: ['urlaub'], aktiv: istAus ? true : m.aktiv };
+      }
+      if (istUrlaub) return { ...m, modi: [] };
+      if (istAus) return { ...m, aktiv: true };
+      return m;
     });
     const antwort = await schicke('api/melder', melder);
     Z.konfig.melder = antwort.melder;
