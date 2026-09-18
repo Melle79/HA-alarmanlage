@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.8.0.
+Für Home Assistant. Stand: Fassung 1.8.1.
 
 ---
 
@@ -782,6 +782,25 @@ Das normale Backup von Home Assistant nimmt `/data` mit.
 **Übernahme → Wieder einschalten.** Das schaltet die gesicherten Automationen
 wieder ein **und** den Trockenlauf an. Beides gehört zusammen: Ohne den
 Trockenlauf meldeten zwei Anlagen gleichzeitig.
+
+> **Nur solange die Automationen noch da sind.** Die Sicherung hält fest,
+> welche *an* waren – nicht, was in ihnen stand. Wer sie gelöscht hat,
+> braucht die Sicherung von `automations.yaml`. Der Knopf merkt das und
+> lässt den Trockenlauf dann **aus**: Ihn einzuschalten, ohne dass etwas
+> anderes über das Haus wacht, wäre schlimmer als gar nichts zu tun.
+
+### Die alten Automationen löschen
+
+Erst, wenn die neue Anlage sich bewährt hat. Vorher eine Kopie von
+`automations.yaml` wegschreiben – das ist danach der einzige Weg zurück.
+
+Danach bleiben ein paar Helfer übrig, die niemand mehr liest:
+`input_text.alarm_ausloeser`, die `input_datetime`-Helfer der alten Anlage
+und der `alarm_control_panel:`-Block aus `configuration.yaml`.
+
+> **`input_select.hausmodus` und `input_boolean.urlaub` erst prüfen.** Sie
+> sehen verwaist aus, werden aber oft von anderer Stelle geschrieben – etwa
+> von einem Urlaubsplaner. Vor dem Löschen nachsehen, wer sie setzt.
 
 ### Umzug auf eine andere Installation
 

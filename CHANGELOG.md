@@ -1,5 +1,19 @@
 # Änderungen
 
+## 1.8.1 – 18.09.2026
+
+**„Wieder einschalten“ schaltet den Trockenlauf nicht mehr blind an.**
+
+Die Sicherung hält fest, welche Automationen *an* waren – nicht, was in
+ihnen stand. Wer sie inzwischen gelöscht hat, bekommt sie hierüber nicht
+zurück. Bis hierher schaltete der Knopf trotzdem den Trockenlauf ein: Die
+Anlage lag still, die Automationen waren weg, und nichts wachte mehr über
+das Haus. Still und ohne Fehlermeldung.
+
+Jetzt prüft der Knopf, ob es die Automationen überhaupt noch gibt. Fehlen
+sie, bleibt der Trockenlauf **aus**, und die Meldung nennt den einzigen Weg
+zurück: die Sicherung von `automations.yaml`.
+
 ## 1.8.0 – 18.09.2026
 
 **Kohlenmonoxid ist kein Rauch.** Bis hierher fielen `smoke`, `gas`,

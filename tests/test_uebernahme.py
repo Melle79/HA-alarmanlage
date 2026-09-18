@@ -164,6 +164,27 @@ class Uebernahme(AnlagenTest):
                        {"entity_id": ["automation.alarmanlage_melder_loest_aus"]}),
                       self.gerufen)
 
+    def test_zurueck_ohne_automationen_laesst_den_trockenlauf_aus(self):
+        """Der gefährlichste Knopf im ganzen Add-on.
+
+        Die Sicherung hält fest, welche Automationen **an** waren – nicht,
+        was in ihnen stand. Wer sie inzwischen gelöscht hat, bekommt sie
+        hierüber nicht zurück. Den Trockenlauf trotzdem einzuschalten
+        legte die Anlage still, ohne dass etwas anderes über das Haus
+        wachte.
+        """
+        self.setze("automation.weg", "on", friendly_name="Weg")
+        self.uebernahme.automationen_abschalten(["Weg"])
+        self.store.set("betrieb", "trockenlauf", False)
+        # Jetzt ist sie geloescht.
+        self.zustaende.pop("automation.weg")
+
+        ergebnis = self.uebernahme.automationen_zurueck()
+        self.assertFalse(ergebnis["ok"])
+        self.assertEqual(ergebnis["grund"], "automationen_geloescht")
+        self.assertIn("automation.weg", ergebnis["fehlen"])
+        self.assertFalse(self.store.get("betrieb", "trockenlauf"))
+
     def test_zurueck_schaltet_wieder_ein_und_den_trockenlauf_an(self):
         self.setze("automation.alarmanlage_melder_loest_aus", "on",
                    friendly_name="Alarmanlage - Melder loest aus")

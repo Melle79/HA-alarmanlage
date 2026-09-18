@@ -1698,9 +1698,19 @@ function uebernahmeZeichnen(vorschlag) {
     + 'Trockenlauf ein.';
   zurueck.onclick = async () => {
     const antwort = await schicke('api/uebernahme/zurueck', {});
-    tost(antwort.ok
-      ? `${antwort.eingeschaltet.length} Automationen wieder an, Trockenlauf an.`
-      : 'Keine Sicherung gefunden.', !antwort.ok);
+    if (antwort.ok) {
+      tost(`${antwort.eingeschaltet.length} Automationen wieder an, `
+        + 'Trockenlauf an.');
+    } else if (antwort.grund === 'automationen_geloescht') {
+      /* Der Trockenlauf bleibt in dem Fall aus. Ihn einzuschalten, ohne
+       * dass die alten Automationen wieder da sind, legte die Anlage
+       * still - und niemand wachte darüber. */
+      tost(`Zurückdrehen nicht möglich: ${antwort.fehlen.length} `
+        + 'Automationen gibt es nicht mehr. Dafür braucht es die Sicherung '
+        + 'von automations.yaml. Der Trockenlauf bleibt aus.', true);
+    } else {
+      tost('Keine Sicherung gefunden.', true);
+    }
     allesLaden();
   };
   knoepfe.appendChild(zurueck);

@@ -351,7 +351,17 @@ def automationen_abschalten(aliasse: list) -> dict:
 
 
 def automationen_zurueck() -> dict:
-    """Die jüngste Sicherung wieder einschalten."""
+    """Die jüngste Sicherung wieder einschalten.
+
+    Die Sicherung hält fest, welche Automationen **an** waren – nicht, was
+    in ihnen stand. Wer sie inzwischen gelöscht hat, kann sie hierüber
+    nicht zurückholen; dafür braucht es die Sicherung von
+    ``automations.yaml``.
+
+    Entscheidend ist, was in dem Fall **nicht** passiert: Der Trockenlauf
+    bleibt aus. Ihn einzuschalten, ohne dass die alten Automationen wieder
+    da sind, legte die Anlage still – und niemand wachte darüber.
+    """
     if not SICHERUNG_DIR.is_dir():
         return {"ok": False, "grund": "keine_sicherung"}
     dateien = sorted(SICHERUNG_DIR.glob("automationen-vor-uebernahme-*.json"))
@@ -361,11 +371,25 @@ def automationen_zurueck() -> dict:
         vorher = json.loads(dateien[-1].read_text(encoding="utf-8"))
     except (OSError, ValueError) as err:
         return {"ok": False, "grund": str(err)}
-    an = [v["entity_id"] for v in vorher if v.get("zustand") == "on"]
-    if an:
-        ha.dienst("automation", "turn_on", {"entity_id": an})
+
+    vorhanden = {e.get("entity_id") for e in ha.zustaende(erzwingen=True)}
+    an = [v["entity_id"] for v in vorher
+          if v.get("zustand") == "on" and v["entity_id"] in vorhanden]
+    fehlen = [v["entity_id"] for v in vorher
+              if v.get("zustand") == "on" and v["entity_id"] not in vorhanden]
+
+    if not an:
+        protokoll.schreiben("uebernahme",
+                            f"Zurückdrehen nicht möglich – {len(fehlen)} "
+                            "Automationen gibt es nicht mehr. Trockenlauf "
+                            "bleibt aus.", fehlen=fehlen)
+        return {"ok": False, "grund": "automationen_geloescht",
+                "fehlen": fehlen}
+
+    ha.dienst("automation", "turn_on", {"entity_id": an})
     store.set("betrieb", "trockenlauf", True)
     protokoll.schreiben("uebernahme",
                         f"{len(an)} Automationen wieder eingeschaltet, "
-                        "Trockenlauf an", datei=dateien[-1].name)
-    return {"ok": True, "eingeschaltet": an}
+                        "Trockenlauf an", datei=dateien[-1].name,
+                        fehlen=fehlen)
+    return {"ok": True, "eingeschaltet": an, "fehlen": fehlen}
