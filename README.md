@@ -71,7 +71,16 @@ Dieses Add-on legt all das an eine Stelle und gibt ihr eine Oberfläche.
 - Nach Linie gruppiert, nach Bereich sortiert
 - Zustandspunkt je Melder: ruhig, angesprungen, oder „gibt es nicht mehr“
 - **Benennt, was fehlt**: welche passenden Melder Home Assistant kennt, die
-  hier nicht eingerichtet sind
+  hier nicht eingerichtet sind. Was kein Melder ist, lässt sich dauerhaft
+  ausblenden
+
+### 🐕 Gegen Fehlalarme
+- **Mindestdauer** je Melder – gegen kurze Zucker unbekannter Ursache
+- **Ruhequelle** je Melder – Entitäten, deren Bewegung ihn *erklärbar*
+  auslöst. Ein Präsenzmelder sieht den Rollladen im selben Zimmer fahren;
+  gegen so eine bekannte Ursache hilft kein Zeitfilter, sondern Wissen
+- **Melder nur in bestimmten Modi** – der Wohnzimmermelder gilt nur im
+  Urlaub, weil sonst der Hund dort sein darf
 
 ### 📥 Übernahme
 - Liest `automations.yaml`, erkennt die Alarmanlage darin und baut einen
@@ -176,6 +185,12 @@ anderthalb Metern unlesbar ist.
 
 ## Hinweise
 
+- **`unlocked` heißt nicht „Tür offen“.** Ein Schloss meldet oft nur, dass
+  der Riegel nicht vorgeschoben ist – in vielen Haushalten der Normalzustand
+  rund um die Uhr. Das Schloss hält deshalb nur das *Wieder*-Scharfschalten
+  auf, nachdem es die Anlage selbst entschärft hat. Als Bedingung für jedes
+  Scharfschalten ergäbe es eine Anlage, die nie scharf wird und dabei gesund
+  aussieht.
 - **Das Add-on fährt keine Rollos.** Wer bei Rauch den Fluchtweg öffnen will,
   macht das dort, wo die Rollos gesteuert werden – zwei Stellen, die bei Rauch
   Rollos fahren, fahren irgendwann gegeneinander. Die Übernahme erkennt solche
@@ -193,10 +208,11 @@ anderthalb Metern unlesbar ist.
 python3 -m unittest discover -s tests
 ```
 
-96 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
+108 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
 echte Anlagen gescheitert sind – die Nacht mit 82 unterdrückten Bewegungen,
 das Cloud-Schloss, das zu spät meldet, die Anlage, die scharf stand, während
-die Familie schlief.
+die Familie schlief, und das Schloss, das dauerhaft „offen“ meldete
+und damit jedes Scharfschalten verhinderte.
 
 ---
 

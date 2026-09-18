@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.4.0.
+Für Home Assistant. Stand: Fassung 1.6.2.
 
 ---
 
@@ -213,17 +213,41 @@ Beim Einrichten läuft man einmal durchs Haus und sieht zu.
 
 | Feld | Bedeutung |
 |---|---|
+Aufgeklappt stehen die Felder in vier Abschnitten, in derselben
+Reihenfolge wie hier.
+
+**Was er ist**
+
+| Feld | Bedeutung |
+|---|---|
 | **Name** | Nur die Anzeige |
 | **Art** | Bewegung, Kontakt, Rauch, Wasser, Erschütterung |
 | **Linie** | Auf welche Gefahrenlinie er gehört |
-| **Ort** | Steht in der Ansage. „Lunas Zimmer", nicht „RM Luna Rauch" |
+| **Ort** | Wird vorgelesen. „Lunas Zimmer", nicht „RM Luna Rauch" |
 | **Löst aus bei** | Der Zustand, der als Auslösung gilt (fast immer `on`) |
-| **Eigener Meldetext** | Überschreibt den Satz der Linie für genau diesen Melder |
-| **Gilt in** | In welchen Scharfmodi er zählt. Nichts angehakt = alle |
+
+**Wann er zählt**
+
+| Feld | Bedeutung |
+|---|---|
+| **In diesen Modi** | In welchen Scharfmodi er gilt. Nichts angehakt = alle |
+| **Eintrittsverzögerung** | Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen |
+
+**Gegen Fehlalarme**
+
+| Feld | Bedeutung |
+|---|---|
 | **Mindestdauer** | Sekunden, die er anhalten muss, bevor er zählt |
 | **Ruhequelle** | Entitäten, deren Bewegung ihn erklärbar auslöst |
-| **Eintrittsverzögerung** | Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen |
-| **Dieser Melder zählt** | Abschalten, ohne zu löschen |
+| **Ruhezeit** | Wie lange er danach übergangen wird |
+
+**Was gemeldet wird**
+
+| Feld | Bedeutung |
+|---|---|
+| **Eigener Meldetext** | Überschreibt den Satz der Linie für genau diesen Melder |
+
+Dazu im Fuß: **Dieser Melder zählt** – abschalten, ohne zu löschen.
 
 > **„Gilt in: alle angehakt" wird als leere Liste gespeichert.** Das ist keine
 > Kosmetik: Kommt später ein Modus dazu, gilt der Melder dann auch dort,
@@ -240,6 +264,27 @@ Der Satz gilt für den **Alarm**, nicht für die Entwarnung: „Achtung,
 Kohlenmonoxid!" taugt nicht als Meldung, dass nichts mehr anliegt.
 
 Im Feld steht blass, was ohne ihn gesagt würde.
+
+#### Haustiere
+
+Ein Hund oder eine Katze, die während der Abwesenheit im Haus bleiben,
+laufen an jedem Bewegungsmelder vorbei, den sie erreichen. Dagegen hilft
+keine Empfindlichkeitseinstellung, sondern eine Entscheidung: **Welche
+Räume darf das Tier, und welche Melder gelten dort nicht?**
+
+Drei Wege, vom feinsten zum gröbsten:
+
+* **Melder nur in bestimmten Modi** – der Wohnzimmermelder gilt nur im
+  Urlaub, weil der Hund dann nicht im Haus ist. Der Raum bleibt bewacht,
+  wenn er leer ist.
+* **Melder abschalten** – „Dieser Melder zählt" aus. Der Raum ist dann
+  unbewacht, der Weg dorthin aber weiterhin.
+* **Mindestdauer** – hilft nur, wenn das Tier kurz vorbeiläuft und ein
+  Mensch länger bliebe. Bei Präsenzmeldern mit Haltezeit taugt das nicht.
+
+Welche Melder betroffen sind, sagt die Historie besser als das Gefühl:
+Wer im Verlauf von Home Assistant die Zeiten der Abwesenheit mit den
+Melderausschlägen vergleicht, sieht sofort, wie weit das Tier kommt.
 
 #### Zwei Werkzeuge gegen Fehlalarme
 
@@ -560,8 +605,18 @@ Zwei Wege, und sie bedeuten Verschiedenes:
 ### In den Urlaub fahren
 
 Hausmodus auf **Urlaub** stellen. Ist Urlaub als *Handmodus* eingetragen,
-kippt er nicht, wenn jemand kurz heimkommt – und er bleibt, bis er von Hand
-beendet wird.
+kippt er nicht, wenn jemand kurz heimkommt – und er bleibt, bis er beendet
+wird. Genau das unterscheidet ihn von „Abwesend", das die Anwesenheit
+jederzeit zurücknimmt.
+
+**Automatisch geht es auch.** `select.alarmanlage_hausmodus` ist eine ganz
+gewöhnliche Auswahl-Entität; jede Automation und jedes Add-on kann sie
+setzen. Wer einen Urlaubsplaner benutzt, trägt sie dort als Ziel ein:
+Option „Urlaub" während des Urlaubs, danach „Abwesend".
+
+> Der zweite Teil ist der wichtige. Urlaub ist der **Handmodus** – die
+> Anwesenheit holt ihn nicht von selbst zurück. Ohne ein „danach Abwesend"
+> stünde die Anlage nach dem Urlaub für immer auf Urlaub.
 
 ### Jemand kommt zum Blumengießen
 
@@ -597,18 +652,19 @@ Der Reihe nach:
 1. Steht **Automatik** auf an?
 2. Ist jemand als **zu Hause** gemeldet? Dann greift das Sicherheitsnetz –
    das Protokoll schreibt `verhindert`
-3. Steht ein **Schloss offen**?
-4. Wurde gerade **aufgeschlossen**? Dann wartet sie auf *Wieder scharf nach dem
-   Abschließen* bzw. den Rückfall
-5. Stehen **Kontakte offen** und ist die Vorprüfung auf *Verhindern* gestellt?
+3. Hat sie sich **am Schloss entschärft**? Dann wartet sie auf *Wieder
+   scharf nach dem Abschließen* bzw. den Rückfall. Ein Schloss, das
+   einfach nur `unlocked` meldet, hält sie **nicht** auf – siehe unten
+4. Stehen **Kontakte offen** und ist die Vorprüfung auf *Verhindern* gestellt?
 
-Alle fünf Fälle stehen im Protokoll.
+Alle vier Fälle stehen im Protokoll.
 
 > Steht der Hausmodus auf einem Scharfmodus, ist niemand zu Hause, und im
-> Protokoll steht trotzdem **gar nichts** – dann prüfen, ob das Add-on
-> älter als 1.5.0 ist. Bis dahin verhinderte ein dauerhaft auf `unlocked`
-> stehendes Schloss jedes Scharfschalten, ohne einen Eintrag zu
-> hinterlassen.
+> Protokoll steht trotzdem **gar nichts** – dann ist das Add-on älter als
+> 1.5.0. Bis dahin verhinderte ein dauerhaft auf `unlocked` stehendes
+> Schloss jedes Scharfschalten, ohne einen Eintrag zu hinterlassen. Das ist
+> der schlimmste Fehler, den eine Alarmanlage haben kann: Sie tut nichts
+> und sieht dabei gesund aus.
 
 ### Die Anlage alarmiert die eigene Familie
 
