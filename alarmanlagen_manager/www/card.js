@@ -44,6 +44,18 @@ const VORGABE = {
   zeige_ausloeser: true,
 };
 
+/* Bis 1.9.3 legte der Editor die Schalter unter "anzeige" ab, weil die
+   Gruppe im Schema einen Namen trug. Karten aus der Zeit tragen den Block
+   noch - er wird hier eingeebnet, damit nichts verlorengeht. */
+function flach(konfig) {
+  const k = { ...(konfig || {}) };
+  if (k.anzeige && typeof k.anzeige === 'object') {
+    Object.assign(k, k.anzeige);
+    delete k.anzeige;
+  }
+  return k;
+}
+
 /* ===================================================================
  * Die Karte
  * =================================================================== */
@@ -70,7 +82,7 @@ class AlarmanlageCard extends HTMLElement {
   }
 
   setConfig(konfig) {
-    this._konfig = { ...VORGABE, ...(konfig || {}) };
+    this._konfig = { ...VORGABE, ...flach(konfig) };
     this._gezeichnet = false;
     if (this.shadowRoot) this.shadowRoot.innerHTML = '';
   }
@@ -498,8 +510,11 @@ const FELDER = [
     },
   },
   {
-    name: 'anzeige',
+    /* Ohne "name" bleiben die Werte flach. Mit einem Namen legt ha-form sie
+       unter diesen Schluessel ab - die Karte liest sie aber oben, und die
+       Schalter waeren wirkungslos. */
     type: 'expandable',
+    title: 'Was die Karte zeigt',
     schema: [
       { name: 'knoepfe', selector: { boolean: {} } },
       { name: 'zeige_marken', selector: { boolean: {} } },
@@ -532,7 +547,7 @@ const ERKLAERUNG = {
 
 class AlarmanlageCardEditor extends HTMLElement {
   setConfig(konfig) {
-    this._konfig = { ...VORGABE, ...(konfig || {}) };
+    this._konfig = { ...VORGABE, ...flach(konfig) };
     this._zeichnen();
   }
 

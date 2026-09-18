@@ -1,5 +1,18 @@
 # Änderungen
 
+## 1.9.4 – 18.09.2026
+
+**Die Schalter im Karten-Editor wirkten nicht.** Die Gruppe „Was die Karte
+zeigt“ trug im Schema einen Namen – damit legt `ha-form` alle fünf Schalter
+unter diesen Schlüssel ab, die Karte liest sie aber eine Ebene höher. Wer
+dort etwas umstellte, änderte nichts; und weil die Gruppe ihre Werte von
+derselben Stelle liest, standen die Schalter auch noch falsch.
+
+* Die Gruppe hat keinen Namen mehr, nur eine Überschrift – die Werte
+  bleiben flach.
+* Karten, in denen der verschachtelte Block schon steht, werden beim Laden
+  eingeebnet. Es geht nichts verloren.
+
 ## 1.9.3 – 18.09.2026
 
 **Die Karte bekommt oben Luft.** Ohne Überschrift klebte der Inhalt am
