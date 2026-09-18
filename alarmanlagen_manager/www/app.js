@@ -2276,10 +2276,15 @@ function einrichtungsstandZeichnen() {
   const stand = $('einrichtung-stand');
   const knopf = $('einrichtung-starten');
   if (!stand) return;
-  if (e.abgeschlossen) {
-    stand.textContent = 'Die Einrichtung ist abgeschlossen. Der Assistent '
-      + 'führt sie bei Bedarf noch einmal durch – er ändert nur, was Sie '
-      + 'bestätigen.';
+  /* Eine Anlage mit Meldern ist eingerichtet, auch wenn der Assistent nie
+   * gelaufen ist – etwa weil es ihn bei der Installation noch nicht gab
+   * oder weil jemand von Hand eingerichtet hat. Ihr "noch nicht
+   * abgeschlossen" vorzuhalten wäre schlicht falsch. */
+  const eingerichtet = e.abgeschlossen || (Z.konfig.melder || []).length > 0;
+  if (eingerichtet) {
+    stand.textContent = 'Die Anlage ist eingerichtet. Der Assistent führt '
+      + 'bei Bedarf noch einmal hindurch – er ändert nur, was Sie '
+      + 'bestätigen, und schaltet nie scharf.';
     knopf.textContent = 'Einrichtung wiederholen';
     knopf.className = 'knopf leise';
   } else {

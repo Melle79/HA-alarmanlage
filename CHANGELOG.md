@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.7.1 – 18.09.2026
+
+Eine Anlage, in der schon Melder stehen, gilt als eingerichtet – auch wenn
+der Assistent nie gelaufen ist. Bei einem Update aus einer älteren Fassung
+hätte die Übersicht sonst „Einrichtung noch nicht abgeschlossen" behauptet,
+während die Anlage längst im Echtbetrieb lief.
+
 ## 1.7.0 – 18.09.2026
 
 **Ein Einrichtungsassistent in zehn Schritten.** Er läuft beim ersten Start
