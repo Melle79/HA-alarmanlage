@@ -172,11 +172,67 @@ class WiederScharf(AnlagenTest):
         self.assertIn(self.anlage.panel, ("arming", "armed_away"))
 
     def test_kein_wiederschaerfen_solange_offen(self):
+        """Nach dem Aufschließen bleibt die Anlage aus, solange offen ist.
+
+        Der ganze Weg, nicht nur die Prüfung: erst scharf, dann
+        aufschließen, dann darf der Takt nicht sofort wieder schärfen -
+        sonst alarmiert die Anlage den, der gerade hereingekommen ist.
+        """
+        self.store.set("modi", "abwesend", "ausgehzeit", 0)
         self.anlage.hausmodus_setzen("abwesend")
-        self.store.z_set(panel="disarmed", letzte_entsperrung=time.time())
-        self.setze("lock.haustuer", "unlocked")
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.haustuer", "unlocked")
+        self.assertEqual(self.anlage.panel, "disarmed")
+        self.assertEqual(self.store.z_get("entschaerft_durch"), "schloss")
         self.anlage._sollzustand_durchsetzen()
         self.assertEqual(self.anlage.panel, "disarmed")
+
+    def test_ein_dauerhaft_offenes_schloss_verhindert_das_schaerfen_nicht(self):
+        """Der Befund vom 18.09.2026, und der schlimmste denkbare Fehler.
+
+        Beide Haustürschlösser meldeten seit dem Vorabend durchgehend
+        "unlocked" - nicht weil die Tür offen stand, sondern weil der
+        Riegel nicht vorgeschoben war. Das ist in vielen Haushalten der
+        Normalzustand. Die Anlage hat daraufhin am Morgen nicht scharf
+        geschaltet, obwohl das Haus leer war, und sah dabei gesund aus:
+        Hausmodus "Abwesend", keine Fehlermeldung, kein Eintrag.
+
+        Das Schloss zählt deshalb nur noch dort, wo es etwas bedeutet -
+        nachdem es die Anlage selbst entschärft hat.
+        """
+        self.store.set("modi", "abwesend", "ausgehzeit", 0)
+        self.setze("lock.haustuer", "unlocked")
+        self.setze("lock.cloud", "unlocked")
+        self.anlage.hausmodus_setzen("abwesend")
+        self.anlage._sollzustand_durchsetzen()
+        self.assertEqual(self.anlage.panel, "armed_away")
+
+    def test_nach_der_obergrenze_zaehlt_das_schloss_nicht_mehr(self):
+        """Sonst bliebe die Anlage nach einmal Aufschließen für immer aus,
+        wenn das Schloss "abgeschlossen" nie meldet."""
+        self.store.set("modi", "abwesend", "ausgehzeit", 0)
+        self.store.set("entschaerfung", "nachlauf_hoechstens_minuten", 60)
+        self.anlage.hausmodus_setzen("abwesend")
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.haustuer", "unlocked")
+        self.assertEqual(self.anlage.panel, "disarmed")
+        # Zwei Stunden später steht das Schloss immer noch auf "unlocked".
+        self.store.z_set(letzte_entsperrung=time.time() - 2 * 3600)
+        self.anlage._sollzustand_durchsetzen()
+        self.assertEqual(self.anlage.panel, "armed_away")
+
+    def test_ein_neuer_scharfmodus_hebt_die_schlosssperre_auf(self):
+        """Wer den Modus von Hand setzt, meint es - sonst käme die Anlage
+        nach einem Weggang ohne Abschließen nie wieder scharf."""
+        self.store.set("modi", "abwesend", "ausgehzeit", 0)
+        self.anlage.hausmodus_setzen("abwesend")
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.haustuer", "unlocked")
+        self.assertEqual(self.anlage.panel, "disarmed")
+        self.anlage.hausmodus_setzen("zuhause")
+        self.anlage.hausmodus_setzen("abwesend")
+        self.anlage._sollzustand_durchsetzen()
+        self.assertEqual(self.anlage.panel, "armed_away")
 
 
 if __name__ == "__main__":

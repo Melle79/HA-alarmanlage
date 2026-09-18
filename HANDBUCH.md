@@ -313,6 +313,14 @@ geht los, während jemand mit dem Schlüssel in der Tür steht.
 Unter *Zusätzliche Meldequellen* kommen Sensoren hinzu, die denselben
 Schlosszustand melden, aber keine `lock`-Entität sind.
 
+> **Das Schloss hält nur das *Wieder*-Scharfschalten auf.** Ein Schloss im
+> Zustand `unlocked` heißt nicht „Tür offen", sondern nur „Riegel nicht
+> vorgeschoben" – in vielen Haushalten der Normalzustand rund um die Uhr.
+> Als Bedingung für *jedes* Scharfschalten ergäbe das eine Anlage, die nie
+> scharf wird und dabei gesund aussieht. Die Anlage merkt sich deshalb,
+> **warum** sie entschärft ist: Nur nach einer Entschärfung am Schloss
+> zählt das Schloss, und auch das nur bis zur Obergrenze.
+
 #### Nachlaufsperre
 
 Nach dem Aufschließen löst Bewegung nicht aus. Die Sperre **hängt am Schloss,
@@ -566,6 +574,12 @@ Der Reihe nach:
 5. Stehen **Kontakte offen** und ist die Vorprüfung auf *Verhindern* gestellt?
 
 Alle fünf Fälle stehen im Protokoll.
+
+> Steht der Hausmodus auf einem Scharfmodus, ist niemand zu Hause, und im
+> Protokoll steht trotzdem **gar nichts** – dann prüfen, ob das Add-on
+> älter als 1.5.0 ist. Bis dahin verhinderte ein dauerhaft auf `unlocked`
+> stehendes Schloss jedes Scharfschalten, ohne einen Eintrag zu
+> hinterlassen.
 
 ### Die Anlage alarmiert die eigene Familie
 

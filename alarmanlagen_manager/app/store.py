@@ -243,6 +243,9 @@ class Store:
                 "ausloeser_linie": None,
                 "ausloeser_text": None,
                 "letzte_entsperrung": None,
+                # Warum zuletzt entschärft wurde: "schloss", "hand",
+                # "automatik" … Nur beim Schloss steht jemand im Haus.
+                "entschaerft_durch": None,
                 "letzte_unterdrueckungsmeldung": None,
                 "ueberbrueckt": [],
                 "offene_alarme": {},

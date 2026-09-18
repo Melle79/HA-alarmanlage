@@ -1,5 +1,30 @@
 # Änderungen
 
+## 1.5.0 – 18.09.2026
+
+**Die Anlage hätte nicht scharf geschaltet.** Gefunden im Trockenlauf, und
+es ist der schlimmste denkbare Fehler: Sie sah dabei gesund aus.
+
+Am Morgen des 18.09. ging der Hausmodus um 07:47 korrekt auf *Abwesend* –
+und dann geschah nichts. Kein Eintrag, keine Meldung, Bedienfeld weiter auf
+*entschärft*. Ursache: Beide Haustürschlösser meldeten seit dem Vorabend
+durchgehend `unlocked`, nicht weil die Tür offen stand, sondern weil der
+Riegel nicht vorgeschoben war. In vielen Haushalten ist das der
+Normalzustand rund um die Uhr.
+
+Das Schloss war bis hierher eine Bedingung für **jedes** Scharfschalten.
+Jetzt zählt es nur noch dort, wo es etwas bedeutet: **nachdem es die Anlage
+selbst entschärft hat**. Dafür merkt sich die Anlage, *warum* sie entschärft
+ist (`entschaerft_durch`). Ein neu gesetzter Scharfmodus hebt die Sperre
+auf – wer den Modus von Hand wählt, meint es.
+
+Dazu greift ab jetzt auch hier die Obergrenze ab dem Aufschließen (Vorgabe
+60 Minuten), dieselbe wie bei der Nachlaufsperre und aus demselben Grund:
+Ein Schloss, das „abgeschlossen" nie meldet, darf die Anlage weder blind
+machen noch dauerhaft unscharf halten.
+
+Vier neue Tests halten den Fall fest.
+
 ## 1.4.0 – 17.09.2026
 
 **Jeder Melder darf einen eigenen Meldetext haben.**

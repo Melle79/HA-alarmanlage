@@ -475,6 +475,7 @@ class Anlage:
             # sichtbar nichts tut, ist schlimmer als gar keiner.
             if self.hausmodus != modus_schluessel:
                 store.z_set(hausmodus=modus_schluessel)
+            store.z_set(entschaerft_durch=None)
 
             ausgehzeit = 0 if sofort else (modus.get("ausgehzeit", 0) or 0)
             if ausgehzeit > 0:
@@ -489,7 +490,7 @@ class Anlage:
             return {"ok": True, "grund": "geschaltet"}
 
     def entschaerfen(self, quelle: str = "hand", text: str = "",
-                     auch_hausmodus: bool = False) -> dict:
+                     auch_hausmodus: bool = False) -> dict:  # noqa: D401
         """Entschärfen.
 
         ``auch_hausmodus`` unterscheidet zwei grundverschiedene Fälle. Ein
@@ -505,7 +506,10 @@ class Anlage:
             if war == "disarmed":
                 return {"ok": True, "grund": "bereits_entschaerft"}
             self._nach("disarmed", frist=None, modus=None)
-            store.z_set(ueberbrueckt=[])
+            # **Warum** entschärft wurde, entscheidet über den Weg zurück:
+            # Nur wenn das Schloss es war, steht jemand im Haus und das
+            # Schloss darf das Schärfen aufhalten.
+            store.z_set(ueberbrueckt=[], entschaerft_durch=quelle)
             protokoll.schreiben("entschaerft", text or f"Entschärft ({quelle})",
                                 quelle=quelle, vorher=war)
             if war == "triggered":
@@ -524,7 +528,12 @@ class Anlage:
                 return {"ok": False, "grund": "unbekannter_modus"}
             if self.hausmodus == schluessel:
                 return {"ok": True, "grund": "unveraendert"}
-            store.z_set(hausmodus=schluessel)
+            # Ein neu gesetzter Scharfmodus ist eine frische Absicht und
+            # hebt eine Entschärfung am Schloss auf - sonst käme die Anlage
+            # nach einem Weggang nie mehr scharf.
+            store.z_set(hausmodus=schluessel,
+                        entschaerft_durch=None if schluessel != "zuhause"
+                        else store.z_get("entschaerft_durch"))
             protokoll.schreiben("hausmodus", f"Hausmodus: {schluessel}",
                                 quelle=quelle)
         self._sollzustand_durchsetzen(quelle=quelle)
@@ -652,9 +661,16 @@ class Anlage:
         if store.get("scharfschaltung", "nie_scharf_wenn_jemand_da",
                      default=True) and self._jemand_da():
             return
-        if self._schloss_offen():
-            return
-        if panel == "disarmed" and not self._darf_wieder_scharf():
+        # Das Schloss hält das Schärfen nur dort auf, wo es etwas bedeutet:
+        # nachdem es die Anlage selbst entschärft hat. Ein Schloss im
+        # Zustand "unlocked" heißt sonst nämlich nicht "Tür offen", sondern
+        # nur "Riegel nicht vorgeschoben" - in vielen Haushalten der
+        # Normalzustand rund um die Uhr. Wer daraus eine Bedingung fürs
+        # Schärfen macht, baut eine Anlage, die nie scharf wird und dabei
+        # gesund aussieht.
+        if panel == "disarmed" \
+                and store.z_get("entschaerft_durch") == "schloss" \
+                and not self._darf_wieder_scharf():
             return
         self.scharf_schalten(modus, quelle=quelle)
 
@@ -670,9 +686,18 @@ class Anlage:
         entsperrt = store.z_get("letzte_entsperrung")
         if not entsperrt:
             return True
+        # Obergrenze ab dem Aufschließen - dieselbe wie bei der
+        # Nachlaufsperre, aus demselben Grund: Ein Schloss, das
+        # "abgeschlossen" nie meldet, darf die Anlage weder blind machen
+        # noch dauerhaft unscharf halten.
+        hoechstens = (konfig.get("nachlauf_hoechstens_minuten", 60) or 60) * 60
+        if time.time() - entsperrt >= hoechstens:
+            return True
         seit_entschaerft = time.time() - (store.z_get("seit") or 0)
         if seit_entschaerft >= (konfig.get("rueckfall_stunden", 2) or 2) * 3600:
             return True
+        if self._schloss_offen():
+            return False
         return self._zu_seit() >= (konfig.get("wieder_scharf_minuten", 10) or 10) * 60
 
     # --------------------------------------------------------- Handgriffe

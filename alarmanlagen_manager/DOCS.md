@@ -162,6 +162,13 @@ hinterher oder schweigt stundenlang, während ein lokales sofort meldet. Wer
 sich für eine Quelle entscheidet, entscheidet sich irgendwann falsch – und
 der Alarm geht los, während jemand mit dem Schlüssel in der Tür steht.
 
+> **Das Schloss hält nur das *Wieder*-Scharfschalten auf.** Ein Schloss im
+> Zustand `unlocked` heißt nicht „Tür offen", sondern nur „Riegel nicht
+> vorgeschoben" – in vielen Haushalten der Normalzustand. Als Bedingung für
+> jedes Scharfschalten ergäbe das eine Anlage, die nie scharf wird und dabei
+> gesund aussieht. Die Anlage merkt sich deshalb, *warum* sie entschärft
+> ist; nur nach einer Entschärfung am Schloss zählt das Schloss.
+
 ### Nachlaufsperre
 
 Nach dem Aufschließen löst Bewegung nicht aus. Die Sperre hängt am Schloss,
