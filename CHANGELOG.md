@@ -1,5 +1,31 @@
 # Änderungen
 
+## 1.6.0 – 18.09.2026
+
+**Zwei Werkzeuge gegen Fehlalarme, je Melder.** Beide entstanden am selben
+Vorfall, lösen aber verschiedene Probleme.
+
+* **Mindestdauer** – der Melder muss so lange anhalten, bevor er zählt.
+  Gegen kurze Zucker unbekannter Ursache. Fällt er vorher ab, fängt die
+  Messung beim nächsten Mal von vorn an, und am Ende der Frist wird er noch
+  einmal gefragt.
+* **Ruhequelle** – Entitäten, deren Bewegung diesen Melder erklärbar
+  auslöst. Der Melder wird dann für die eingestellte Ruhezeit übergangen,
+  mit Eintrag im Protokoll.
+
+Der Anlass: Ein Präsenzmelder im Büro sprang vier Morgen hintereinander um
+08:30 an, immer genau **vier Sekunden** nachdem das Rollladen im selben
+Zimmer auffuhr. Am vierten Morgen war das Haus leer – Alarm.
+
+Die Mindestdauer allein hätte das *nicht* gelöst, und das ist die
+interessantere Erkenntnis: Der Melder hält von sich aus rund 60 Sekunden.
+Die Rollo-Auslösungen dauerten 65–70 s, echte Anwesenheit ab 58 s. Es gibt
+keine Schwelle, die beide trennt – bei 90 s wären zwar alle vier
+Rollo-Auslösungen weggefallen, aber auch 25 von 90 echten.
+
+Gegen eine **bekannte** Ursache hilft kein Zeitfilter, sondern Wissen.
+Deshalb die Ruhequelle.
+
 ## 1.5.0 – 18.09.2026
 
 **Die Anlage hätte nicht scharf geschaltet.** Gefunden im Trockenlauf, und

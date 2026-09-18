@@ -429,6 +429,10 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
     teile.push(modi);
     teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
   }
+  if (m.mindestdauer) teile.push(`erst nach ${m.mindestdauer} s`);
+  if (m.ruhe_bei?.length) teile.push('mit Ruhequelle');
+  if (m.mindestdauer) teile.push(`erst nach ${m.mindestdauer} s`);
+  if (m.ruhe_bei?.length) teile.push('mit Ruhequelle');
   mitte.appendChild(el('div', 'melder-kurz', teile.join(' · ')));
   kopf.appendChild(mitte);
 
@@ -464,6 +468,54 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
     m.ausloesezustand = wert; melderSpeichern();
   }));
   koerper.appendChild(felder);
+
+  /* Zwei Felder gegen Fehlalarme. Sie lösen verschiedene Probleme und
+   * sind deshalb getrennt: Die Mindestdauer hilft gegen kurze Zucker
+   * unbekannter Ursache, die Ruhequelle gegen eine *bekannte* Ursache –
+   * und gegen eine bekannte Ursache hilft kein Zeitfilter, sondern
+   * Wissen. */
+  const stoerung = el('div', 'melder-stoerung');
+  stoerung.appendChild(el('h3', null, 'Gegen Fehlalarme'));
+
+  const dauer = el('label');
+  dauer.appendChild(document.createTextNode(
+    'Mindestdauer in Sekunden (0 = zählt sofort)'));
+  const dauerFeld = el('input');
+  dauerFeld.type = 'number';
+  dauerFeld.min = '0';
+  dauerFeld.value = m.mindestdauer || 0;
+  dauerFeld.onchange = () => {
+    m.mindestdauer = parseInt(dauerFeld.value, 10) || 0;
+    melderSpeichern();
+  };
+  dauer.appendChild(dauerFeld);
+  dauer.appendChild(el('small', null,
+    'Der Melder muss so lange anhalten, bevor er zählt. Vorsicht: Viele '
+    + 'Präsenzmelder halten von sich aus rund 60 s – dort trennt die '
+    + 'Mindestdauer echte von falschen Auslösungen nicht.'));
+  stoerung.appendChild(dauer);
+
+  const ruheZeit = el('label');
+  ruheZeit.appendChild(document.createTextNode('Ruhezeit in Sekunden'));
+  const ruheFeld = el('input');
+  ruheFeld.type = 'number';
+  ruheFeld.min = '0';
+  ruheFeld.value = m.ruhe_sekunden ?? 120;
+  ruheFeld.onchange = () => {
+    m.ruhe_sekunden = parseInt(ruheFeld.value, 10) || 0;
+    melderSpeichern();
+  };
+  ruheZeit.appendChild(ruheFeld);
+  stoerung.appendChild(ruheZeit);
+
+  stoerung.appendChild(auswahlKarte({
+    titel: 'Ruht, wenn sich das bewegt hat',
+    alle: Z.auswahl?.bewegliches || [],
+    gewaehlt: m.ruhe_bei || [],
+    leerText: 'nichts – der Melder zählt immer',
+    beiAenderung: (auswahl) => { m.ruhe_bei = auswahl; melderSpeichern(); },
+  }));
+  koerper.appendChild(stoerung);
 
   /* Eigener Satz für genau diesen Melder. Nötig, weil eine Linie mehr
    * umfasst als eine Gefahr: Auf der Rauchlinie hängt auch der

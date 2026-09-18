@@ -47,6 +47,11 @@ class Anlage:
         self._stop = threading.Event()
         # Wann zuletzt niemand mehr da war – für die Leerlauf-Frist.
         self._leer_seit: float | None = None
+        # Melder, die ihre Mindestdauer noch absitzen: id -> Frist. Bewusst
+        # nur im Arbeitsspeicher: Nach einem Neustart fängt die Messung von
+        # vorn an, und das ist richtig so – wer weiß schon, was in der
+        # Zwischenzeit war.
+        self._wartende: dict[str, float] = {}
         # Wird von außen gesetzt (der MQTT-Teil hängt sich hier ein).
         self.on_zustand = None
         self._letzte_veroeffentlichung = 0.0
@@ -291,13 +296,78 @@ class Anlage:
 
     # ----------------------------------------------------- Melderauswertung
 
-    def _melder_ausgeloest(self, melder: dict) -> None:
+    def _ruht_gerade(self, melder: dict) -> str:
+        """Hat sich etwas bewegt, das diesen Melder erklärbar auslöst?
+
+        Ein Präsenzmelder sieht den Rollladen im selben Zimmer fahren. Das
+        ist keine Unzuverlässigkeit des Melders, sondern eine bekannte
+        Ursache – und gegen bekannte Ursachen hilft kein Zeitfilter,
+        sondern Wissen. Gibt den Grund zurück, oder "".
+        """
+        quellen = melder.get("ruhe_bei") or []
+        if not quellen:
+            return ""
+        fenster = melder.get("ruhe_sekunden", 120) or 120
+        for entity_id in quellen:
+            eintrag = ha.zustand(entity_id)
+            if not eintrag:
+                continue
+            alter = _alter(eintrag.get("last_changed"))
+            if alter is not None and alter <= fenster:
+                name = eintrag.get("attributes", {}).get("friendly_name",
+                                                         entity_id)
+                return f"{name} hat sich vor {int(alter)} s bewegt"
+        return ""
+
+    def _warten_lassen(self, melder: dict, ort: str) -> None:
+        """Die Mindestdauer anlaufen lassen."""
+        melder_id = melder.get("id")
+        if melder_id in self._wartende:
+            return
+        dauer = melder.get("mindestdauer") or 0
+        self._wartende[melder_id] = time.time() + dauer
+        protokoll.schreiben("beobachtet",
+                            f"{ort} – zählt erst, wenn es {dauer} s anhält",
+                            melder=melder_id)
+
+    def _wartende_pruefen(self) -> None:
+        if not self._wartende:
+            return
+        jetzt = time.time()
+        for melder_id, frist in list(self._wartende.items()):
+            if jetzt < frist:
+                continue
+            self._wartende.pop(melder_id, None)
+            melder = next((m for m in store.melder()
+                           if m.get("id") == melder_id), None)
+            if not melder:
+                continue
+            # Nur zählen, wenn es *immer noch* anliegt. Ein Melder, der
+            # zwischendurch abgefallen und wieder angesprungen ist, hat
+            # seine Mindestdauer nicht durchgehalten.
+            if not ha.ist_zustand(melder.get("entity", ""),
+                                  melder.get("ausloesezustand", "on")):
+                continue
+            with self._lock:
+                self._melder_ausgeloest(melder, sofort=True)
+
+    def _melder_ausgeloest(self, melder: dict, sofort: bool = False) -> None:
         linie_schluessel = melder.get("linie", "einbruch")
         linie = store.get("linien", linie_schluessel, default={}) or {}
         if not linie.get("aktiv", True):
             return
 
         ort = melder.get("ort") or melder.get("name") or melder.get("entity")
+
+        if not sofort:
+            grund = self._ruht_gerade(melder)
+            if grund:
+                protokoll.schreiben("beruhigt", f"{ort} übergangen – {grund}",
+                                    melder=melder.get("id"))
+                return
+            if (melder.get("mindestdauer") or 0) > 0:
+                self._warten_lassen(melder, ort)
+                return
 
         if linie.get("geltung") == "immer":
             self._dauerlinie_ausgeloest(melder, linie_schluessel, ort)
@@ -342,6 +412,11 @@ class Anlage:
             self._ausloesen(linie_schluessel)
 
     def _melder_beruhigt(self, melder: dict) -> None:
+        if self._wartende.pop(melder.get("id"), None) is not None:
+            protokoll.schreiben("beobachtet",
+                                f"{melder.get('ort') or melder.get('name')} – "
+                                "zu kurz, kein Alarm",
+                                melder=melder.get("id"))
         linie_schluessel = melder.get("linie", "einbruch")
         linie = store.get("linien", linie_schluessel, default={}) or {}
         if linie.get("geltung") != "immer":
@@ -546,6 +621,7 @@ class Anlage:
         while not self._stop.is_set():
             try:
                 self._fristen_pruefen()
+                self._wartende_pruefen()
                 # Die Anwesenheit wird abgefragt, nicht nur über Ereignisse
                 # geführt: Die Leerlauf-Frist läuft ab, ohne dass irgendwo
                 # etwas passiert, und ein Ereignis während einer Trennung

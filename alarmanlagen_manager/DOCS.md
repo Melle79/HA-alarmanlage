@@ -55,6 +55,11 @@ Art, in welchen Modi der Melder gilt und ob er verzögert auslöst. Der Punkt
 links zeigt seinen Zustand – grau ruhig, gelb angesprungen, roter Ring
 heißt „gibt es in Home Assistant nicht mehr".
 
+Gegen Fehlalarme trägt jeder Melder zwei Felder: eine **Mindestdauer**
+(gegen kurze Zucker unbekannter Ursache) und **Ruhequellen** – Entitäten,
+deren Bewegung ihn erklärbar auslöst, etwa der Rollladen im selben Zimmer.
+Gegen eine bekannte Ursache hilft kein Zeitfilter, sondern Wissen.
+
 Je Linie steht außerdem, **welche passenden Melder Home Assistant kennt,
 die hier nicht eingerichtet sind**. Ein Rauchmelder, der in keiner
 Alarmanlage steht, fällt sonst niemandem auf.

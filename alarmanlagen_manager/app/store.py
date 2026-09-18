@@ -131,6 +131,13 @@ DEFAULTS = {
     # Liste, keine Zuordnung: die Reihenfolge ist die Anzeigereihenfolge,
     # und ein Melder darf zweimal dieselbe Entität benutzen (etwa einmal
     # sofort, einmal verzögert in einem anderen Modus).
+    #
+    # Ein Melder trägt: id, entity, name, ort, art, linie, modi,
+    # verzoegert, ausloesezustand, aktiv, text – und gegen Fehlalarme
+    # zwei Felder:
+    #   mindestdauer   Sekunden, die er anhalten muss, bevor er zählt
+    #   ruhe_bei       Entitäten, deren Bewegung ihn erklärbar auslöst
+    #   ruhe_sekunden  wie lange danach übergangen wird
     "melder": [],
     "scharfschaltung": {
         # anwesenheit | entitaet | nur_hand

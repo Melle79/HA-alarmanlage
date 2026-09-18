@@ -220,6 +220,8 @@ Beim Einrichten läuft man einmal durchs Haus und sieht zu.
 | **Löst aus bei** | Der Zustand, der als Auslösung gilt (fast immer `on`) |
 | **Eigener Meldetext** | Überschreibt den Satz der Linie für genau diesen Melder |
 | **Gilt in** | In welchen Scharfmodi er zählt. Nichts angehakt = alle |
+| **Mindestdauer** | Sekunden, die er anhalten muss, bevor er zählt |
+| **Ruhequelle** | Entitäten, deren Bewegung ihn erklärbar auslöst |
 | **Eintrittsverzögerung** | Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen |
 | **Dieser Melder zählt** | Abschalten, ohne zu löschen |
 
@@ -238,6 +240,33 @@ Der Satz gilt für den **Alarm**, nicht für die Entwarnung: „Achtung,
 Kohlenmonoxid!" taugt nicht als Meldung, dass nichts mehr anliegt.
 
 Im Feld steht blass, was ohne ihn gesagt würde.
+
+#### Zwei Werkzeuge gegen Fehlalarme
+
+Sie lösen verschiedene Probleme und sind deshalb getrennt.
+
+**Mindestdauer** – der Melder muss so lange anhalten, bevor er zählt. Gegen
+kurze Zucker unbekannter Ursache. Fällt er vorher ab, fängt die Messung
+beim nächsten Mal von vorn an.
+
+> **Vorsicht bei Präsenzmeldern.** Viele halten von sich aus rund 60
+> Sekunden. Dort trennt die Mindestdauer echte von falschen Auslösungen
+> nicht – beide sehen gleich lang aus. Vor dem Einstellen im Verlauf
+> nachsehen, wie lange die Auslösungen tatsächlich dauern.
+
+**Ruhequelle** – Entitäten, deren Bewegung diesen Melder erklärbar auslöst.
+Nach einer Änderung an einer solchen Entität wird der Melder für die
+Ruhezeit übergangen, mit Eintrag im Protokoll.
+
+Der Anlass war ein Präsenzmelder im Büro, der vier Morgen hintereinander um
+08:30 ansprang – immer genau vier Sekunden, nachdem der Rollladen im selben
+Zimmer auffuhr. Das ist keine Unzuverlässigkeit des Melders, sondern eine
+bekannte Ursache. Und gegen eine bekannte Ursache hilft kein Zeitfilter,
+sondern Wissen: Rollladen als Ruhequelle eintragen, fertig.
+
+Wer so etwas sucht, vergleicht im Verlauf von Home Assistant die Uhrzeiten
+des Melders mit denen der Rollläden, Lüfter, Heizung oder Saugroboter. Ein
+immer gleicher Abstand ist der Beweis.
 
 #### Was fehlt
 

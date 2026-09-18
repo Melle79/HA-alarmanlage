@@ -144,6 +144,9 @@ def auswahl():
         "schloesser": ha.entitaeten("lock."),
         "sensoren": ha.entitaeten("sensor.", "binary_sensor."),
         "lichter": ha.entitaeten("light."),
+        # Fuer die Ruhequellen: was sich bewegt und dabei einen Melder
+        # ueberlisten kann.
+        "bewegliches": ha.entitaeten("cover.", "fan.", "climate.", "vacuum."),
         "schalter": ha.entitaeten("switch.", "siren."),
         "helfer": ha.entitaeten("input_select.", "input_boolean."),
         "meldewege": ha.meldewege(),

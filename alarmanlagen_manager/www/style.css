@@ -403,6 +403,14 @@ label > input, label > select { display: block; margin-top: 4px; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .melder-koerper { padding: 0 12px 12px; }
+.melder-stoerung {
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rand);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 10px; align-items: start;
+}
+.melder-stoerung h3 { grid-column: 1 / -1; margin: 0; }
+.melder-stoerung small { display: block; color: var(--text-leise); font-size: 12px; margin-top: 4px; }
 .melder-text { display: block; margin-top: 10px; }
 .melder-text input { width: 100%; }
 .melder-fuss {
