@@ -403,15 +403,21 @@ label > input, label > select { display: block; margin-top: 4px; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .melder-koerper { padding: 0 12px 12px; }
-.melder-stoerung {
-  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rand);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
-  gap: 10px; align-items: start;
+/* Der aufgeklappte Melder in Abschnitten. Ohne sie stehen zehn Felder in
+   einem Rutsch untereinander, und nichts sagt mehr, was zu was gehört. */
+.melder-abschnitt {
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rand);
 }
-.melder-stoerung h3 { grid-column: 1 / -1; margin: 0; }
-.melder-stoerung small { display: block; color: var(--text-leise); font-size: 12px; margin-top: 4px; }
-.melder-text { display: block; margin-top: 10px; }
+.melder-abschnitt:first-of-type { margin-top: 10px; }
+.melder-abschnitt > h3 { margin: 0 0 10px; }
+.melder-abschnitt > .hilfe { margin: 10px 0 0; }
+.melder-abschnitt .kanal { margin-top: 10px; }
+.melder-abschnitt > .kanal-an { margin-top: 10px; }
+.melder-text { display: block; }
+.melder-text small {
+  display: block; color: var(--text-leise); font-size: 12px; margin-top: 4px;
+}
+.modiwahl-titel { color: var(--text-leise); }
 .melder-text input { width: 100%; }
 .melder-fuss {
   display: flex; align-items: center; justify-content: space-between;
@@ -434,7 +440,7 @@ label > input, label > select { display: block; margin-top: 4px; }
 }
 .fehlhinweis strong { font-size: 13px; color: var(--warn); }
 .fehlhinweis .hilfe { margin: 2px 0 0; }
-.modiwahl { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+.modiwahl { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .modiwahl label {
   display: flex; gap: 5px; align-items: center;
   color: var(--text); font-size: 13px;

@@ -1,5 +1,24 @@
 # Änderungen
 
+## 1.6.1 – 18.09.2026
+
+**Der aufgeklappte Melder war eine Wand aus Feldern.** Er steht jetzt in
+vier Abschnitten: *Was er ist*, *Wann er zählt*, *Gegen Fehlalarme*, *Was
+gemeldet wird*.
+
+* Die Ruhezeit sitzt **in** der Ruhequelle statt daneben – ohne Quelle ist
+  sie bedeutungslos, und als eigenes Feld sah sie aus wie eine zweite
+  Mindestdauer.
+* Die lange Warnung zur Mindestdauer ist ein Tooltip; im Abschnitt steht
+  ein Satz, der sagt, worum es geht.
+* „In diesen Modi" und die Eintrittsverzögerung stehen beieinander, statt
+  die Verzögerung ans andere Zeilenende zu schieben.
+
+Dazu ein Textfehler: In der Kurzfassung stand **„mit Ruhequelle · mit
+Ruhequelle"**. Sie wurde an zwei Stellen gebaut, und prompt liefen sie
+auseinander. Jetzt baut sie genau eine Funktion – ein Text, der zweimal
+gebaut wird, wird irgendwann zweimal verschieden gebaut.
+
 ## 1.6.0 – 18.09.2026
 
 **Zwei Werkzeuge gegen Fehlalarme, je Melder.** Beide entstanden am selben

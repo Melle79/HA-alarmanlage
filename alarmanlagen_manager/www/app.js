@@ -400,8 +400,36 @@ function melderAnlegen(kandidat, linieSchluessel) {
   });
 }
 
+/* Die Kurzfassung eines Melders – an genau einer Stelle gebaut.
+ *
+ * Sie stand einmal in zwei Funktionen, und prompt liefen sie auseinander:
+ * "mit Ruhequelle · mit Ruhequelle". Ein Text, der zweimal gebaut wird,
+ * wird irgendwann zweimal verschieden gebaut. */
+function melderKurz(m) {
+  const linie = Z.konfig.linien[m.linie];
+  const teile = [ARTEN[m.art] || m.art];
+  if (linie?.geltung === 'immer') {
+    teile.push('rund um die Uhr');
+  } else {
+    teile.push(m.modi?.length
+      ? m.modi.map((k) => Z.konfig.modi[k]?.name || k).join(', ')
+      : 'alle Modi');
+    teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
+  }
+  if (m.mindestdauer) teile.push(`erst nach ${m.mindestdauer} s`);
+  if (m.ruhe_bei?.length) teile.push('mit Ruhequelle');
+  return teile.join(' · ');
+}
+
+function kurzAktualisieren(kopf, m) {
+  kopf.querySelector('.melder-kurz').textContent = melderKurz(m);
+}
+
 /* Ein Melder als zugeklappte Zeile. Zugeklappt steht dort, was man beim
- * Durchsehen wissen will: wo er hängt, was er ist, wann er gilt. */
+ * Durchsehen wissen will: wo er hängt, was er ist, wann er gilt.
+ *
+ * Aufgeklappt in drei Abschnitten. Ohne sie stehen zehn Felder in einem
+ * Rutsch untereinander, und nichts sagt mehr, was zu was gehört. */
 function melderKarte(m, bereiche, zustaende, war_offen) {
   const karte = el('details', 'melder' + (m.aktiv === false ? ' aus' : ''));
   karte.dataset.id = m.id;
@@ -418,22 +446,7 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
 
   const mitte = el('div', 'melder-mitte');
   mitte.appendChild(el('div', 'melder-name', m.name || m.entity));
-  const linie = Z.konfig.linien[m.linie];
-  const teile = [ARTEN[m.art] || m.art];
-  if (linie?.geltung === 'immer') {
-    teile.push('rund um die Uhr');
-  } else {
-    const modi = m.modi?.length
-      ? m.modi.map((k) => Z.konfig.modi[k]?.name || k).join(', ')
-      : 'alle Modi';
-    teile.push(modi);
-    teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
-  }
-  if (m.mindestdauer) teile.push(`erst nach ${m.mindestdauer} s`);
-  if (m.ruhe_bei?.length) teile.push('mit Ruhequelle');
-  if (m.mindestdauer) teile.push(`erst nach ${m.mindestdauer} s`);
-  if (m.ruhe_bei?.length) teile.push('mit Ruhequelle');
-  mitte.appendChild(el('div', 'melder-kurz', teile.join(' · ')));
+  mitte.appendChild(el('div', 'melder-kurz', melderKurz(m)));
   kopf.appendChild(mitte);
 
   const bereich = bereiche[m.entity];
@@ -444,6 +457,15 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
   const koerper = el('div', 'melder-koerper');
   koerper.appendChild(el('div', 'kanal-eid', m.entity));
 
+  const abschnitt = (titel) => {
+    const kasten = el('div', 'melder-abschnitt');
+    kasten.appendChild(el('h3', null, titel));
+    koerper.appendChild(kasten);
+    return kasten;
+  };
+
+  /* ------------------------------------------------------- Grundangaben */
+  const grund = abschnitt('Was er ist');
   const felder = el('div', 'melder-felder');
   felder.appendChild(textfeld('Name', m.name, (wert) => {
     m.name = wert; melderSpeichern();
@@ -461,79 +483,21 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
     m.verzoegert = Z.konfig.linien[wert]?.geltung === 'scharf';
     melderSpeichern(); melderZeichnen();
   }));
-  felder.appendChild(textfeld('Ort (für die Ansage)', m.ort, (wert) => {
+  felder.appendChild(textfeld('Ort (wird vorgelesen)', m.ort, (wert) => {
     m.ort = wert; melderSpeichern();
   }));
   felder.appendChild(textfeld('Löst aus bei', m.ausloesezustand || 'on', (wert) => {
     m.ausloesezustand = wert; melderSpeichern();
   }));
-  koerper.appendChild(felder);
+  grund.appendChild(felder);
 
-  /* Zwei Felder gegen Fehlalarme. Sie lösen verschiedene Probleme und
-   * sind deshalb getrennt: Die Mindestdauer hilft gegen kurze Zucker
-   * unbekannter Ursache, die Ruhequelle gegen eine *bekannte* Ursache –
-   * und gegen eine bekannte Ursache hilft kein Zeitfilter, sondern
-   * Wissen. */
-  const stoerung = el('div', 'melder-stoerung');
-  stoerung.appendChild(el('h3', null, 'Gegen Fehlalarme'));
-
-  const dauer = el('label');
-  dauer.appendChild(document.createTextNode(
-    'Mindestdauer in Sekunden (0 = zählt sofort)'));
-  const dauerFeld = el('input');
-  dauerFeld.type = 'number';
-  dauerFeld.min = '0';
-  dauerFeld.value = m.mindestdauer || 0;
-  dauerFeld.onchange = () => {
-    m.mindestdauer = parseInt(dauerFeld.value, 10) || 0;
-    melderSpeichern();
-  };
-  dauer.appendChild(dauerFeld);
-  dauer.appendChild(el('small', null,
-    'Der Melder muss so lange anhalten, bevor er zählt. Vorsicht: Viele '
-    + 'Präsenzmelder halten von sich aus rund 60 s – dort trennt die '
-    + 'Mindestdauer echte von falschen Auslösungen nicht.'));
-  stoerung.appendChild(dauer);
-
-  const ruheZeit = el('label');
-  ruheZeit.appendChild(document.createTextNode('Ruhezeit in Sekunden'));
-  const ruheFeld = el('input');
-  ruheFeld.type = 'number';
-  ruheFeld.min = '0';
-  ruheFeld.value = m.ruhe_sekunden ?? 120;
-  ruheFeld.onchange = () => {
-    m.ruhe_sekunden = parseInt(ruheFeld.value, 10) || 0;
-    melderSpeichern();
-  };
-  ruheZeit.appendChild(ruheFeld);
-  stoerung.appendChild(ruheZeit);
-
-  stoerung.appendChild(auswahlKarte({
-    titel: 'Ruht, wenn sich das bewegt hat',
-    alle: Z.auswahl?.bewegliches || [],
-    gewaehlt: m.ruhe_bei || [],
-    leerText: 'nichts – der Melder zählt immer',
-    beiAenderung: (auswahl) => { m.ruhe_bei = auswahl; melderSpeichern(); },
-  }));
-  koerper.appendChild(stoerung);
-
-  /* Eigener Satz für genau diesen Melder. Nötig, weil eine Linie mehr
-   * umfasst als eine Gefahr: Auf der Rauchlinie hängt auch der
-   * Kohlenmonoxidmelder, und "meldet Rauch" wäre dort falsch. */
-  const eigenerText = el('label', 'melder-text');
-  eigenerText.appendChild(document.createTextNode(
-    'Eigener Meldetext (leer = der Satz der Linie). Platzhalter: {ort} {zeit}'));
-  const textfeldEigen = el('input');
-  textfeldEigen.type = 'text';
-  textfeldEigen.placeholder = vorgabetext(m);
-  textfeldEigen.value = m.text || '';
-  textfeldEigen.oninput = () => { m.text = textfeldEigen.value; melderSpeichern(); };
-  eigenerText.appendChild(textfeldEigen);
-  koerper.appendChild(eigenerText);
+  /* --------------------------------------------------------- Wann er zählt */
+  const wann = abschnitt('Wann er zählt');
+  const linie = Z.konfig.linien[m.linie];
 
   if (linie?.geltung === 'scharf') {
     const wahl = el('div', 'modiwahl');
-    wahl.appendChild(el('span', null, 'Gilt in:'));
+    wahl.appendChild(el('span', 'modiwahl-titel', 'In diesen Modi:'));
     const modi = Object.entries(Z.konfig.modi).filter(([, x]) => x.aktiv);
     for (const [schluessel, modus] of modi) {
       const label = el('label');
@@ -555,8 +519,9 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
       label.appendChild(el('span', null, modus.name));
       wahl.appendChild(label);
     }
+    wann.appendChild(wahl);
 
-    const verz = el('label', 'abgesetzt');
+    const verz = el('label', 'kanal-an');
     const verzKasten = el('input');
     verzKasten.type = 'checkbox';
     verzKasten.checked = m.verzoegert !== false;
@@ -565,12 +530,91 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
       melderSpeichern(); kurzAktualisieren(kopf, m);
     };
     verz.appendChild(verzKasten);
-    verz.appendChild(el('span', null, 'Eintrittsverzögerung'));
-    verz.title = 'Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen.';
-    wahl.appendChild(verz);
-    koerper.appendChild(wahl);
+    const verzText = el('span');
+    verzText.appendChild(el('strong', null, 'Eintrittsverzögerung'));
+    verzText.appendChild(el('small', null,
+      'Aus heißt: löst sofort aus, ohne Zeit zum Entschärfen.'));
+    verz.appendChild(verzText);
+    wann.appendChild(verz);
+  } else {
+    wann.appendChild(el('div', 'hilfe',
+      'Diese Linie gilt rund um die Uhr – der Melder zählt immer, auch '
+      + 'wenn die Anlage entschärft ist.'));
   }
 
+  /* ------------------------------------------------------ Gegen Fehlalarme */
+  const stoerung = abschnitt('Gegen Fehlalarme');
+  const stoerfelder = el('div', 'melder-felder');
+
+  const dauer = el('label');
+  dauer.appendChild(document.createTextNode('Mindestdauer'));
+  dauer.title = 'Vorsicht bei Präsenzmeldern: Viele halten von sich aus rund '
+    + '60 Sekunden. Dort trennt die Mindestdauer echte von falschen '
+    + 'Auslösungen nicht – beide sehen gleich lang aus.';
+  const dauerZeile = el('span', 'einheit');
+  const dauerFeld = el('input');
+  dauerFeld.type = 'number';
+  dauerFeld.min = '0';
+  dauerFeld.value = m.mindestdauer || 0;
+  dauerFeld.onchange = () => {
+    m.mindestdauer = parseInt(dauerFeld.value, 10) || 0;
+    melderSpeichern(); kurzAktualisieren(kopf, m);
+  };
+  dauerZeile.appendChild(dauerFeld);
+  dauerZeile.appendChild(el('span', null, 'Sekunden anhalten'));
+  dauer.appendChild(dauerZeile);
+  stoerfelder.appendChild(dauer);
+  stoerung.appendChild(stoerfelder);
+
+  /* Die Ruhezeit gehört in die Ruhequelle, nicht daneben: Ohne Quelle ist
+   * sie bedeutungslos, und als eigenes Feld sah sie aus wie eine zweite
+   * Mindestdauer. */
+  const ruheZeit = el('label', 'kanal-farbe');
+  ruheZeit.appendChild(el('span', null, 'Danach übergehen für'));
+  const ruheEinheit = el('span', 'einheit');
+  const ruheFeld = el('input');
+  ruheFeld.type = 'number';
+  ruheFeld.min = '0';
+  ruheFeld.value = m.ruhe_sekunden ?? 120;
+  ruheFeld.onchange = () => {
+    m.ruhe_sekunden = parseInt(ruheFeld.value, 10) || 0;
+    melderSpeichern();
+  };
+  ruheEinheit.appendChild(ruheFeld);
+  ruheEinheit.appendChild(el('span', null, 'Sekunden'));
+  ruheZeit.appendChild(ruheEinheit);
+
+  stoerung.appendChild(auswahlKarte({
+    titel: 'Ruht, wenn sich das bewegt hat',
+    alle: Z.auswahl?.bewegliches || [],
+    gewaehlt: m.ruhe_bei || [],
+    leerText: 'nichts – der Melder zählt immer',
+    nachtrag: ruheZeit,
+    beiAenderung: (auswahl) => {
+      m.ruhe_bei = auswahl; melderSpeichern(); kurzAktualisieren(kopf, m);
+    },
+  }));
+  stoerung.appendChild(el('div', 'hilfe',
+    'Ein Präsenzmelder sieht den Rollladen im selben Zimmer fahren. Gegen '
+    + 'so eine bekannte Ursache hilft kein Zeitfilter, sondern das Rollo '
+    + 'als Ruhequelle.'));
+
+  /* ------------------------------------------------------------- Meldung */
+  const meldung = abschnitt('Was gemeldet wird');
+  const eigenerText = el('label', 'melder-text');
+  eigenerText.appendChild(document.createTextNode(
+    'Eigener Meldetext (leer = der Satz der Linie)'));
+  const textfeldEigen = el('input');
+  textfeldEigen.type = 'text';
+  textfeldEigen.placeholder = vorgabetext(m);
+  textfeldEigen.value = m.text || '';
+  textfeldEigen.oninput = () => { m.text = textfeldEigen.value; melderSpeichern(); };
+  eigenerText.appendChild(textfeldEigen);
+  eigenerText.appendChild(el('small', null,
+    'Platzhalter: {ort} {zeit}. Gilt für den Alarm, nicht für die Entwarnung.'));
+  meldung.appendChild(eigenerText);
+
+  /* ---------------------------------------------------------------- Fuß */
   const fuss = el('div', 'melder-fuss');
   const an = el('label', 'kanal-an');
   const anKasten = el('input');
@@ -607,20 +651,6 @@ function vorgabetext(m) {
   }[m.linie] || '';
   return vorlage.replace('{ort}', m.ort || m.name || '')
     .replace('{ausloeser}', m.ort || m.name || '');
-}
-
-function kurzAktualisieren(kopf, m) {
-  const linie = Z.konfig.linien[m.linie];
-  const teile = [ARTEN[m.art] || m.art];
-  if (linie?.geltung === 'immer') {
-    teile.push('rund um die Uhr');
-  } else {
-    teile.push(m.modi?.length
-      ? m.modi.map((k) => Z.konfig.modi[k]?.name || k).join(', ')
-      : 'alle Modi');
-    teile.push(m.verzoegert !== false ? 'verzögert' : 'sofort');
-  }
-  kopf.querySelector('.melder-kurz').textContent = teile.join(' · ');
 }
 
 function textfeld(beschriftung, wert, beiAenderung) {
