@@ -140,6 +140,8 @@ Das Add-on ändert die Automationen nie von sich aus. Abgeschaltet wird nur,
 was ausdrücklich ausgewählt wurde, ihr Zustand liegt vorher gesichert unter
 `/data/sicherungen/`, und ein Knopf schaltet sie wieder ein.
 
+![Dashboard-Karte](docs/bilder/karte.png)
+
 ![Melder](docs/bilder/melder.png)
 
 ---

@@ -1,5 +1,12 @@
 # Änderungen
 
+## 1.9.1 – 18.09.2026
+
+**Während einer laufenden Frist meldet die Anlage jede Sekunde.** Vorher
+alle zehn – eine Dashboard-Karte bekam den Rest also nur alle zehn Sekunden
+zu sehen und musste die Lücke raten. Beim Zählen von 45 auf 0 fällt jede
+Ungenauigkeit auf, und der Fortschrittsbalken ruckelte.
+
 ## 1.9.0 – 18.09.2026
 
 **Die Dashboard-Karte hat einen Editor.** Sie lässt sich jetzt über die

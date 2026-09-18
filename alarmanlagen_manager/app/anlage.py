@@ -638,6 +638,12 @@ class Anlage:
             try:
                 self._fristen_pruefen()
                 self._wartende_pruefen()
+                # Läuft eine Frist, wird jede Sekunde veröffentlicht. Sonst
+                # bekäme eine Dashboard-Karte den Rest nur alle zehn
+                # Sekunden zu sehen und müsste die Lücke raten - und beim
+                # Zählen von 45 auf 0 fällt jede Ungenauigkeit auf.
+                if store.z_get("frist"):
+                    self._veroeffentlichen(sofort=False)
                 # Die Anwesenheit wird abgefragt, nicht nur über Ereignisse
                 # geführt: Die Leerlauf-Frist läuft ab, ohne dass irgendwo
                 # etwas passiert, und ein Ereignis während einer Trennung

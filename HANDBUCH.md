@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.9.0.
+Für Home Assistant. Stand: Fassung 1.9.1.
 
 ---
 
@@ -630,6 +630,8 @@ Für eigene Karten und Automationen liegt alles als Attribut bereit:
 
 Das Add-on legt `alarmanlage-card.js` nach `/config/www` und trägt sie als
 Lovelace-Ressource ein. **Kein HACS nötig.**
+
+![Dashboard-Karte](docs/bilder/karte.png)
 
 Im Dashboard unter *Karte hinzufügen* steht sie als **Alarmanlage**. Sie
 bringt einen **Editor** mit: Bedienfeld auswählen, Textgröße wählen,
