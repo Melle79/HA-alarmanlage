@@ -92,13 +92,20 @@
         <div class="zeile">
           <input type="search" id="melder-suche" placeholder="Suchen …">
           <select id="melder-filter">
-            <option value="">alle Arten</option>
-            <option value="bewegung">Bewegung</option>
-            <option value="kontakt">Kontakt</option>
-            <option value="rauch">Rauch</option>
-            <option value="wasser">Wasser</option>
-            <option value="erschuetterung">Erschütterung</option>
-            <option value="sonstige">sonstige</option>
+            <optgroup label="Wofür">
+              <option value="linie:einbruch">für Einbruch</option>
+              <option value="linie:rauch">für Rauch</option>
+              <option value="linie:wasser">für Wasser</option>
+            </optgroup>
+            <optgroup label="Nach Art">
+              <option value="">alle Arten</option>
+              <option value="bewegung">Bewegung</option>
+              <option value="kontakt">Kontakt</option>
+              <option value="rauch">Rauch</option>
+              <option value="wasser">Wasser</option>
+              <option value="erschuetterung">Erschütterung</option>
+              <option value="sonstige">sonstige</option>
+            </optgroup>
           </select>
         </div>
         <div class="zeile" id="melder-ausgeblendet-zeile" style="display:none">

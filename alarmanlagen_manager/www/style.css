@@ -337,6 +337,16 @@ label > input, label > select { display: block; margin-top: 4px; }
 .vorschlagszeile:last-child { border-bottom: 0; }
 .vorschlagszeile.drin { opacity: .45; }
 .vorschlagsliste { max-height: 340px; }
+/* Der Kopf über der verengten Liste. Ohne ihn sähe es aus, als wären nur
+   noch drei Sensoren im Haus. */
+.fokus-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  border: 1px solid var(--akzent); border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 8px;
+}
+.fokus-kopf strong { font-size: 13px; color: var(--akzent); }
+.fokus-kopf .hilfe { margin: 2px 0 0; }
 .kanal-weg {
   flex: 0 0 auto; border: 1px solid var(--rand); background: none;
   color: var(--text-leise); border-radius: 8px; cursor: pointer;

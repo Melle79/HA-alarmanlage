@@ -1,5 +1,24 @@
 # Änderungen
 
+## 1.7.4 – 18.09.2026
+
+**„Einzeln ansehen“ zeigt jetzt die Einzelnen.** Der Knopf am Hinweis
+öffnete die vollständige Vorschlagsliste – in einem gewachsenen Haus ein
+paar hundert Einträge, und die drei gemeinten standen irgendwo darin. Jetzt
+zeigt er **genau die aus dem Hinweis**, mit einem Kopf, der das sagt, und
+einem Knopf *Weitere für diese Linie*, der eine Ebene weiter geht statt
+gleich ins Ganze.
+
+**Ein Filter nach Linie.** Über der Vorschlagsliste steht neben den
+einzelnen Arten jetzt *für Einbruch*, *für Rauch*, *für Wasser*. Wer im
+Einbruch-Zusammenhang sucht, will keine Rauchmelder sehen – und erst recht
+nichts, was nur zufällig dieselbe Geräteklasse trägt.
+
+**Die Kopfzeile zählte falsch.** „25 erkannte Melder sind noch nicht
+eingerichtet“ stand da, während die Liste darunter drei zeigte: Sie zählte
+die ausgeblendeten mit. Wer die Zahl liest, sucht sonst zweiundzwanzig, die
+es nicht gibt. Und bei genau einem heißt es jetzt „1 erkannter Melder ist“.
+
 ## 1.7.3 – 18.09.2026
 
 **„Nicht mehr anbieten“ direkt am Hinweis.** Der Hinweis „… sind hier nicht

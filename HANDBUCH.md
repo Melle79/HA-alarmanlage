@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.7.3.
+Für Home Assistant. Stand: Fassung 1.7.4.
 
 ---
 
@@ -378,6 +378,13 @@ hinzusehen, und dann verpasst er den Rauchmelder, der wirklich fehlt.
 Der Vorschlag geht nämlich nach der Geräteklasse, und die ist gutgläubig: In
 einer gewachsenen Installation tragen auch Dinge die Klasse *opening*, die
 mit dem Haus nichts zu tun haben – etwa der Öffnungszustand von Tankstellen.
+
+*Einzeln ansehen* öffnet die Liste und zeigt darin **nur die Melder aus
+diesem Hinweis**. Ein Knopf *Weitere für diese Linie* geht eine Ebene
+weiter: alles, was zu dieser Gefahrenlinie passt. Für den Einbruch sind das
+Bewegung, Kontakte und Erschütterung – keine Rauchmelder. Denselben Blick
+gibt es über dem Suchfeld als Filter *für Einbruch*, *für Rauch*, *für
+Wasser*.
 
 Ausgeblendetes kommt zurück über *Melder hinzufügen*: dort steht der
 Schalter **N ausgeblendet anzeigen** (mit ↩ je Eintrag) und der Knopf **Alle

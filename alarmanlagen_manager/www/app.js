@@ -10,6 +10,9 @@ const Z = {
   status: null,
   auswahl: null,
   seite: 'uebersicht',
+  /* Wenn der Blick aus einem Hinweis auf wenige Melder verengt ist:
+   * {entities, titel}. null = die ganze Liste. */
+  vorschlagFokus: null,
   ticker: null,
 };
 
@@ -432,12 +435,19 @@ function fehlHinweis(linieSchluessel, fehlend) {
   knoepfe.appendChild(weg);
 
   const ansehen = el('button', 'knopf klein leise', 'Einzeln ansehen');
-  ansehen.title = 'Öffnet die Liste – dort lässt sich auch ausblenden, was '
-    + 'gar kein Melder ist.';
+  ansehen.title = 'Zeigt genau diese Melder – dort lässt sich jeder einzeln '
+    + 'hinzufügen oder ausblenden.';
   ansehen.onclick = (ereignis) => {
     ereignis.preventDefault();
-    const arten = LINIENARTEN[linieSchluessel] || [];
-    $('melder-filter').value = arten.length === 1 ? arten[0] : '';
+    /* Nur die aus diesem Hinweis. Die volle Liste hat in einem gewachsenen
+     * Haus ein paar hundert Einträge; wer auf "Einzeln ansehen" drückt,
+     * meint die drei, die im Hinweis stehen. */
+    Z.vorschlagFokus = {
+      entities: fehlend.map((f) => f.entity_id),
+      titel: kasten.querySelector('strong').textContent,
+      linie: linieSchluessel,
+    };
+    $('melder-filter').value = '';
     $('melder-suche').value = '';
     $('melder-hinzufuegen').open = true;
     vorschlaegeZeichnen();
@@ -766,20 +776,28 @@ function melderSpeichern() {
 
 function standHinzufuegen() {
   const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
-  const frei = (Z.auswahl?.melder || []).filter((k) => !drin.has(k.entity_id));
+  /* Ausgeblendetes zählt nicht mit. Sonst behauptet die Kopfzeile „25
+   * erkannte Melder", während die Liste darunter drei zeigt – und wer die
+   * Zahl liest, sucht zweiundzwanzig, die es nicht gibt. */
+  const weg = new Set(Z.auswahl?.ignoriert || []);
+  const frei = (Z.auswahl?.melder || [])
+    .filter((k) => !drin.has(k.entity_id) && !weg.has(k.entity_id));
   const stand = $('hinzufuegen-stand');
   const zahl = $('hinzufuegen-zahl');
   if (!stand) return;
   const nuetzlich = frei.filter((k) => k.art !== 'sonstige');
-  stand.textContent = nuetzlich.length
-    ? `${nuetzlich.length} erkannte Melder sind noch nicht eingerichtet`
-    : 'Alles Erkannte ist eingerichtet';
+  stand.textContent = nuetzlich.length === 0
+    ? 'Alles Erkannte ist eingerichtet'
+    : nuetzlich.length === 1
+      ? '1 erkannter Melder ist noch nicht eingerichtet'
+      : `${nuetzlich.length} erkannte Melder sind noch nicht eingerichtet`;
   zahl.textContent = `${frei.length} frei`;
 }
 
 function vorschlaegeZeichnen() {
   const kasten = $('melder-vorschlaege');
   kasten.textContent = '';
+  kasten.parentElement.querySelector('.fokus-kopf')?.remove();
   const suche = $('melder-suche').value.toLowerCase();
   const filter = $('melder-filter').value;
   const drin = new Set((Z.konfig.melder || []).map((m) => m.entity));
@@ -787,6 +805,32 @@ function vorschlaegeZeichnen() {
 
   const weg = new Set(Z.auswahl?.ignoriert || []);
   const zeigeWeg = $('melder-ausgeblendet')?.checked;
+
+  /* Der Blick auf eine Auswahl, die aus einem Hinweis kommt. Sobald jemand
+   * sucht oder filtert, ist er wieder in der ganzen Liste – sonst wundert
+   * er sich, warum die Suche nichts findet. */
+  const fokus = (suche || filter) ? null : Z.vorschlagFokus;
+  if (fokus) {
+    const kopf = el('div', 'fokus-kopf');
+    const text = el('div');
+    text.appendChild(el('strong', null, fokus.titel));
+    text.appendChild(el('div', 'hilfe',
+      `Es werden nur diese ${fokus.entities.length} gezeigt.`));
+    kopf.appendChild(text);
+    const alle = el('button', 'knopf klein leise',
+      fokus.linie ? 'Weitere für diese Linie' : 'Alle Sensoren zeigen');
+    alle.onclick = (ereignis) => {
+      ereignis.preventDefault();
+      /* Nicht in die ganze Liste springen, sondern eine Ebene weiter:
+       * erst alles, was zu dieser Linie passt. Wer darüber hinaus will,
+       * stellt den Filter selbst um. */
+      if (fokus.linie) $('melder-filter').value = 'linie:' + fokus.linie;
+      Z.vorschlagFokus = null;
+      vorschlaegeZeichnen();
+    };
+    kopf.appendChild(alle);
+    kasten.parentElement.insertBefore(kopf, kasten);
+  }
   const sortiert = [...(Z.auswahl?.melder || [])].sort((a, b) => {
     const da = drin.has(a.entity_id) ? 1 : 0;
     const db = drin.has(b.entity_id) ? 1 : 0;
@@ -798,10 +842,18 @@ function vorschlaegeZeichnen() {
   });
 
   ausgeblendetStand(weg.size);
+  const nurDiese = fokus ? new Set(fokus.entities) : null;
   let gezeigt = 0;
   for (const kandidat of sortiert) {
-    if (weg.has(kandidat.entity_id) !== !!zeigeWeg) continue;
-    if (filter && kandidat.art !== filter) continue;
+    if (nurDiese && !nurDiese.has(kandidat.entity_id)) continue;
+    if (!nurDiese && weg.has(kandidat.entity_id) !== !!zeigeWeg) continue;
+    /* "für Einbruch" statt einer einzelnen Art: Wer im Einbruch-
+     * Zusammenhang sucht, will keine Rauchmelder sehen – und erst recht
+     * nichts, was nur zufällig dieselbe Geräteklasse trägt. */
+    if (filter.startsWith('linie:')) {
+      const arten = LINIENARTEN[filter.slice(6)] || [];
+      if (!arten.includes(kandidat.art)) continue;
+    } else if (filter && kandidat.art !== filter) continue;
     const bereich = bereiche[kandidat.entity_id] || '';
     if (suche && !`${kandidat.name} ${kandidat.entity_id} ${bereich}`
       .toLowerCase().includes(suche)) continue;
@@ -856,9 +908,15 @@ function ausgeblendetStand(anzahl) {
     `${anzahl} ausgeblendet anzeigen`;
 }
 
-$('melder-suche').oninput = vorschlaegeZeichnen;
+$('melder-suche').oninput = () => {
+  if ($('melder-suche').value) Z.vorschlagFokus = null;
+  vorschlaegeZeichnen();
+};
 $('melder-filtern').oninput = melderZeichnen;
-$('melder-filter').onchange = vorschlaegeZeichnen;
+$('melder-filter').onchange = () => {
+  if ($('melder-filter').value) Z.vorschlagFokus = null;
+  vorschlaegeZeichnen();
+};
 $('melder-ausgeblendet').onchange = vorschlaegeZeichnen;
 $('melder-alle-zurueck').onclick = async () => {
   const antwort = await schicke('api/melder/ignorieren', { alle_zurueck: true });
