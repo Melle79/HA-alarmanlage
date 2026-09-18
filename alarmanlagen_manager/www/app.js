@@ -85,10 +85,56 @@ document.getElementById('reiter').addEventListener('click', (ereignis) => {
     b.classList.toggle('an', b === knopf));
   document.querySelectorAll('.seite').forEach((s) =>
     s.classList.toggle('an', s.id === 'seite-' + Z.seite));
-  if (Z.seite === 'protokoll') protokollLaden();
+  if (Z.seite === 'protokoll') { protokollfilterFuellen(); protokollLaden(); }
 });
 
 /* ---------------------------------------------------------- Übersicht */
+
+/* Alles, was sonst als roher Schlüssel in der Oberfläche landet.
+ *
+ * Die Schlüssel selbst bleiben englisch – sie stehen in Home Assistant,
+ * in der Konfiguration und im Protokoll, und eine Übersetzung dort würde
+ * bei jedem Sprachwechsel Entitäten und Einträge ungültig machen.
+ * Übersetzt wird nur, was ein Mensch liest. */
+const PANELTEXT = {
+  armed_away: 'scharf – niemand zu Hause',
+  armed_vacation: 'scharf – Urlaub',
+  armed_night: 'scharf – Nacht',
+  armed_home: 'teilscharf – jemand zu Hause',
+  disarmed: 'entschärft',
+};
+
+const PROTOKOLLTEXT = {
+  start: 'Start',
+  scharf: 'scharf',
+  schaltet: 'schaltet scharf',
+  entschaerft: 'entschärft',
+  voralarm: 'Voralarm',
+  ausloesung: 'Auslösung',
+  alarm: 'Alarm',
+  entwarnung: 'Entwarnung',
+  unterdrueckt: 'unterdrückt',
+  uebergangen: 'übergangen',
+  beruhigt: 'Ruhequelle',
+  beobachtet: 'beobachtet',
+  verhindert: 'verhindert',
+  ueberbrueckt: 'überbrückt',
+  quittiert: 'quittiert',
+  probe: 'Probebetrieb',
+  meldung: 'Meldung',
+  hausmodus: 'Hausmodus',
+  tuer: 'Tür',
+  betrieb: 'Betrieb',
+  uebernahme: 'Übernahme',
+  hinweis: 'Hinweis',
+};
+
+const LINIENTEXT = {
+  einbruch: 'Einbruch',
+  rauch: 'Rauch',
+  wasser: 'Wasser',
+  hausmodus: 'Hausmodus',
+};
 
 const ZUSTANDSTEXT = {
   disarmed: ['Entschärft', 'entschaerft', '🔓'],
@@ -211,6 +257,14 @@ function grundText(grund) {
     jemand_da: 'Nicht scharf geschaltet – jemand ist zu Hause.',
     offene_kontakte: 'Nicht scharf geschaltet – es steht etwas offen.',
     unbekannter_modus: 'Diesen Modus gibt es nicht.',
+    bereits_scharf: 'Steht schon so.',
+    schaltet_bereits: 'Schaltet gerade scharf.',
+    bereits_entschaerft: 'Ist schon entschärft.',
+    unveraendert: 'Steht schon so.',
+    geschaltet: 'Geschaltet.',
+    entschaerft: 'Entschärft.',
+    unbekannter_befehl: 'Diesen Befehl gibt es nicht.',
+    keine_sicherung: 'Es gibt keine Sicherung.',
   }[grund] || grund;
 }
 
@@ -821,7 +875,7 @@ function modiZeichnen() {
     an.appendChild(el('span', null, 'in Benutzung'));
     kopf.appendChild(an);
     kopf.appendChild(el('div', 'eid',
-      `Bedienfeld-Zustand: ${modus.panel_zustand}`));
+      `Bedienfeld: ${PANELTEXT[modus.panel_zustand] || modus.panel_zustand}`));
     kasten.appendChild(kopf);
 
     const felder = el('div', 'melder-felder');
@@ -1100,6 +1154,25 @@ function chips(kasten, liste, beiAenderung) {
 }
 
 /* ---------------------------------------------------------- Meldewege */
+
+/* Der Filter im Protokoll soll dieselben Wörter anbieten, die in den
+ * Einträgen stehen – sonst sucht man nach "Ruhequelle" und findet nichts. */
+function protokollfilterFuellen() {
+  const feld = $('protokoll-filter');
+  if (!feld || feld.dataset.gefuellt) return;
+  feld.dataset.gefuellt = '1';
+  const behalten = feld.value;
+  feld.textContent = '';
+  const leer = el('option', null, 'alles');
+  leer.value = '';
+  feld.appendChild(leer);
+  for (const [schluessel, text] of Object.entries(PROTOKOLLTEXT)) {
+    const option = el('option', null, text);
+    option.value = schluessel;
+    feld.appendChild(option);
+  }
+  feld.value = behalten;
+}
 
 const STUFENTEXT = {
   voralarm: ['Voralarm', 'Während der Eintrittsverzögerung, bevor der Alarm '
@@ -1467,7 +1540,7 @@ function uebernahmeZeichnen(vorschlag) {
     links.appendChild(knopf);
     const text = el('div');
     text.appendChild(el('div', null, automation.alias));
-    const unter = [`Linie: ${automation.art}`,
+    const unter = [`Linie: ${LINIENTEXT[automation.art] || automation.art}`,
       `${automation.entitaeten.length} Entitäten`];
     if (automation.aktiv === false) unter.push('steht schon auf aus');
     if (automation.fremdwirkung) {
@@ -1553,7 +1626,8 @@ async function protokollLaden() {
       zeile.appendChild(el('div', 'p-zeit',
         new Date(eintrag.zeit * 1000).toLocaleString('de-DE',
           { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })));
-      zeile.appendChild(el('div', 'p-art ' + eintrag.art, eintrag.art));
+      zeile.appendChild(el('div', 'p-art ' + eintrag.art,
+        PROTOKOLLTEXT[eintrag.art] || eintrag.art));
       zeile.appendChild(el('div', 'p-text', eintrag.text));
       liste.appendChild(zeile);
     }

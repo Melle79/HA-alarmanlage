@@ -1,5 +1,23 @@
 # Änderungen
 
+## 1.6.2 – 18.09.2026
+
+**Fehlende Übersetzungen.** An vier Stellen schlugen rohe Schlüssel durch:
+
+* Bei den Modi stand „Bedienfeld-Zustand: `armed_away`". Jetzt:
+  „Bedienfeld: scharf – niemand zu Hause".
+* Im Protokoll war die Art des Eintrags der Schlüssel selbst –
+  `uebernahme`, `beruhigt`, `beobachtet`. Jetzt deutsch, und der Filter
+  darüber bietet dieselben Wörter an.
+* In der Übernahme stand „Linie: `einbruch`".
+* Einige Rückmeldungen der Schnittstelle (`bereits_scharf`,
+  `schaltet_bereits`, `keine_sicherung`) kamen unübersetzt als Meldung an.
+
+Die **Schlüssel selbst bleiben englisch**: Sie stehen in Home Assistant, in
+der Konfiguration und im Protokoll. Eine Übersetzung dort würde bei jedem
+Sprachwechsel Entitäten und alte Einträge ungültig machen. Übersetzt wird
+nur, was ein Mensch liest.
+
 ## 1.6.1 – 18.09.2026
 
 **Der aufgeklappte Melder war eine Wand aus Feldern.** Er steht jetzt in
