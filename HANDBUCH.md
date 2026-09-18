@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.7.2.
+Für Home Assistant. Stand: Fassung 1.7.3.
 
 ---
 
@@ -369,11 +369,19 @@ Je Linie steht, **welche passenden Melder Home Assistant kennt, die hier nicht
 eingerichtet sind** – mit einem Knopf, der sie alle übernimmt. Ein
 Rauchmelder, der in keiner Alarmanlage steht, fällt sonst niemandem auf.
 
-Der Vorschlag geht nach der Geräteklasse, und die ist gutgläubig: In einer
-gewachsenen Installation tragen auch Dinge die Klasse *opening*, die mit dem
-Haus nichts zu tun haben – etwa der Öffnungszustand von Tankstellen. Solche
-Vorschläge lassen sich mit **✕** dauerhaft ausblenden; ein Schalter über der
-Liste holt sie wieder hervor.
+Drei Knöpfe stehen daran: *Alle hinzufügen*, *Einzeln ansehen* und **Nicht
+mehr anbieten**. Der dritte ist öfter der richtige, als man denkt – ein
+Präsenzmelder, der zu oft falsch meldet, oder ein Gerät, das gar nicht
+angeschlossen ist. Wer den Hinweis jedes Mal wegschaut, hört irgendwann auf
+hinzusehen, und dann verpasst er den Rauchmelder, der wirklich fehlt.
+
+Der Vorschlag geht nämlich nach der Geräteklasse, und die ist gutgläubig: In
+einer gewachsenen Installation tragen auch Dinge die Klasse *opening*, die
+mit dem Haus nichts zu tun haben – etwa der Öffnungszustand von Tankstellen.
+
+Ausgeblendetes kommt zurück über *Melder hinzufügen*: dort steht der
+Schalter **N ausgeblendet anzeigen** (mit ↩ je Eintrag) und der Knopf **Alle
+wieder anbieten**.
 
 Die eigenen Sammelsensoren des Add-ons stehen gar nicht erst zur Auswahl –
 sonst würde der Sammelsensor zum Melder für sich selbst.

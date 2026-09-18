@@ -1,5 +1,19 @@
 # Änderungen
 
+## 1.7.3 – 18.09.2026
+
+**„Nicht mehr anbieten“ direkt am Hinweis.** Der Hinweis „… sind hier nicht
+eingerichtet“ konnte bisher nur zwei Dinge: alle hinzufügen oder einzeln
+ansehen. Der häufigste Fall ist aber ein dritter – *das ist Absicht*.
+
+Ein Präsenzmelder, der zu oft falsch meldet, ein Gerät, das gar nicht
+angeschlossen ist: Wer das jedes Mal wieder vorgeschlagen bekommt, hört auf
+hinzusehen. Und dann verpasst er den Rauchmelder, der wirklich fehlt.
+
+Ein Klick blendet die ganze Gruppe aus. Zurückholen geht in *Melder
+hinzufügen* – dort steht jetzt neben dem Schalter „N ausgeblendet anzeigen“
+auch **Alle wieder anbieten**.
+
 ## 1.7.2 – 18.09.2026
 
 **Der Assistent taugt jetzt auch für eine eingerichtete Anlage.** Gefunden

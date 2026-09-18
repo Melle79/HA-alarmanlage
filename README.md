@@ -218,7 +218,7 @@ anderthalb Metern unlesbar ist.
 python3 -m unittest discover -s tests
 ```
 
-112 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
+114 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
 echte Anlagen gescheitert sind – die Nacht mit 82 unterdrückten Bewegungen,
 das Cloud-Schloss, das zu spät meldet, die Anlage, die scharf stand, während
 die Familie schlief, und das Schloss, das dauerhaft „offen“ meldete

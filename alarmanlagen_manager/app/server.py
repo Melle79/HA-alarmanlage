@@ -112,14 +112,19 @@ def ignorieren():
     """Einen Vorschlag dauerhaft ausblenden – oder wieder hervorholen."""
     daten = request.get_json(silent=True) or {}
     liste = store.get("ignorierte_melder", default=[]) or []
-    entity_id = daten.get("entity")
+    # Einzeln über "entity", mehrere über "entities" - der Hinweis auf der
+    # Melderseite blendet eine ganze Gruppe auf einmal aus, und dafür drei
+    # Anfragen hintereinander zu schicken wäre unnötig.
+    betroffen = daten.get("entities") or \
+        ([daten["entity"]] if daten.get("entity") else [])
     if daten.get("alle_zurueck"):
         liste = []
-    elif entity_id and daten.get("an", True):
-        if entity_id not in liste:
-            liste.append(entity_id)
-    elif entity_id:
-        liste = [e for e in liste if e != entity_id]
+    elif daten.get("an", True):
+        for entity_id in betroffen:
+            if entity_id not in liste:
+                liste.append(entity_id)
+    else:
+        liste = [e for e in liste if e not in betroffen]
     store.set("ignorierte_melder", liste)
     return jsonify({"ok": True, "ignoriert": liste})
 

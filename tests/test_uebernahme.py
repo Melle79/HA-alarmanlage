@@ -34,6 +34,25 @@ class Kandidaten(AnlagenTest):
         ids = [k["entity_id"] for k in self.ha.melderkandidaten()]
         self.assertIn("binary_sensor.alarmanlage_rauch", ids)
 
+    def test_mehrere_auf_einmal_ausblenden(self):
+        """Der Hinweis auf der Melderseite blendet eine ganze Gruppe aus.
+
+        Dafür drei Anfragen hintereinander zu schicken wäre unnötig – und
+        bei einem Abbruch zwischendrin bliebe die Hälfte ausgeblendet.
+        """
+        self.store.set("ignorierte_melder", [])
+        liste = self.store.get("ignorierte_melder")
+        for e in ("binary_sensor.a", "binary_sensor.b", "binary_sensor.c"):
+            if e not in liste:
+                liste.append(e)
+        self.store.set("ignorierte_melder", liste)
+        self.assertEqual(len(self.store.get("ignorierte_melder")), 3)
+
+    def test_alle_zurueckholen_leert_die_liste(self):
+        self.store.set("ignorierte_melder", ["binary_sensor.a"])
+        self.store.set("ignorierte_melder", [])
+        self.assertEqual(self.store.get("ignorierte_melder"), [])
+
     def test_ausgeblendete_werden_gemerkt(self):
         self.assertEqual(self.store.get("ignorierte_melder"), [])
         self.store.set("ignorierte_melder", ["binary_sensor.tankstelle"])

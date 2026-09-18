@@ -390,10 +390,12 @@ function fehlendeMelder(linieSchluessel) {
     && !drin.has(k.entity_id) && !weg.has(k.entity_id));
 }
 
-async function ignorieren(entity_id, an) {
-  const antwort = await schicke('api/melder/ignorieren', { entity: entity_id, an });
+async function ignorieren(entities, an) {
+  const liste = Array.isArray(entities) ? entities : [entities];
+  const antwort = await schicke('api/melder/ignorieren', { entities: liste, an });
   Z.auswahl.ignoriert = antwort.ignoriert;
   melderZeichnen(); vorschlaegeZeichnen();
+  return antwort;
 }
 
 function fehlHinweis(linieSchluessel, fehlend) {
@@ -411,6 +413,23 @@ function fehlHinweis(linieSchluessel, fehlend) {
 
   const knoepfe = el('div', 'zeile');
   knoepfe.style.margin = '0';
+
+  /* Der häufigste Fall bei diesem Hinweis ist nicht „hinzufügen“, sondern
+   * „das ist Absicht“: ein Präsenzmelder, der zu oft falsch meldet, ein
+   * Gerät, das gar nicht angeschlossen ist. Wer das jedes Mal wieder
+   * vorgeschlagen bekommt, hört auf hinzusehen – und dann verpasst er den
+   * Rauchmelder, der wirklich fehlt. */
+  const weg = el('button', 'knopf klein leise', 'Nicht mehr anbieten');
+  weg.title = 'Blendet diese Melder aus dem Hinweis und der Vorschlagsliste '
+    + 'aus. Zurückholen geht über den Schalter in „Melder hinzufügen“.';
+  weg.onclick = async (ereignis) => {
+    ereignis.preventDefault();
+    weg.disabled = true;
+    await ignorieren(fehlend.map((f) => f.entity_id), true);
+    tost(`${fehlend.length} ausgeblendet – zurückholen über „Melder `
+      + 'hinzufügen“.');
+  };
+  knoepfe.appendChild(weg);
 
   const ansehen = el('button', 'knopf klein leise', 'Einzeln ansehen');
   ansehen.title = 'Öffnet die Liste – dort lässt sich auch ausblenden, was '
@@ -817,7 +836,7 @@ function vorschlaegeZeichnen() {
         : 'Nicht mehr anbieten – das ist kein Melder';
       weiter.onclick = (ereignis) => {
         ereignis.preventDefault();
-        ignorieren(kandidat.entity_id, !zeigeWeg);
+        ignorieren([kandidat.entity_id], !zeigeWeg);
       };
       zeile.appendChild(weiter);
     }
@@ -841,6 +860,13 @@ $('melder-suche').oninput = vorschlaegeZeichnen;
 $('melder-filtern').oninput = melderZeichnen;
 $('melder-filter').onchange = vorschlaegeZeichnen;
 $('melder-ausgeblendet').onchange = vorschlaegeZeichnen;
+$('melder-alle-zurueck').onclick = async () => {
+  const antwort = await schicke('api/melder/ignorieren', { alle_zurueck: true });
+  Z.auswahl.ignoriert = antwort.ignoriert;
+  $('melder-ausgeblendet').checked = false;
+  melderZeichnen(); vorschlaegeZeichnen();
+  tost('Alle Vorschläge wieder da.');
+};
 
 /* --------------------------------------------------------------- Modi */
 

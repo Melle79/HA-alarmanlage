@@ -101,10 +101,14 @@
             <option value="sonstige">sonstige</option>
           </select>
         </div>
-        <label class="zeile" id="melder-ausgeblendet-zeile" style="display:none">
-          <input type="checkbox" id="melder-ausgeblendet">
-          <span id="melder-ausgeblendet-zahl"></span>
-        </label>
+        <div class="zeile" id="melder-ausgeblendet-zeile" style="display:none">
+          <label class="zeile" style="margin:0">
+            <input type="checkbox" id="melder-ausgeblendet">
+            <span id="melder-ausgeblendet-zahl"></span>
+          </label>
+          <button id="melder-alle-zurueck" class="knopf klein leise">
+            Alle wieder anbieten</button>
+        </div>
         <div class="vorschlagsliste" id="melder-vorschlaege"></div>
       </div>
     </details>
