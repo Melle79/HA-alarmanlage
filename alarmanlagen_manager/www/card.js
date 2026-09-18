@@ -183,6 +183,12 @@ class AlarmanlageCard extends HTMLElement {
       offen.length ? 'Offen: ' + offen.join(', ') : '');
     zeigen(this._konfig.zeige_ausloeser, 'ausloeser', 'mdi:motion-sensor',
       a.letzter_ausloeser ? 'Zuletzt: ' + a.letzter_ausloeser : '');
+
+    /* Eine Trennlinie ohne etwas darunter trennt nichts. */
+    const wurzel = this.shadowRoot;
+    const etwasDa = ['offen', 'ausloeser'].some((k) =>
+      wurzel.querySelector('.' + k).style.display !== 'none');
+    wurzel.querySelector('.trenner').style.display = etwasDa ? '' : 'none';
   }
 
   _fristZeichnen() {
@@ -302,6 +308,7 @@ class AlarmanlageCard extends HTMLElement {
       + '      <div class="balken"><div></div></div>'
       + '    </div>'
       + '  </div>'
+      + '  <div class="trenner"></div>'
       + '  <div class="zeile offen"></div>'
       + '  <div class="zeile ausloeser"></div>'
       + '  <div class="knoepfe"></div>'
@@ -334,18 +341,15 @@ class AlarmanlageCard extends HTMLElement {
       .marke.warn { border-color: var(--warning-color); color: var(--warning-color); }
       .marke.schlecht { border-color: var(--error-color); color: var(--error-color); }
 
+      /* Kein eigener Kasten im Kasten. Eine Karte sitzt im Theme des
+         Benutzers, und ein Rahmen mit eigenem Hintergrund faellt dort als
+         Fremdkoerper auf - besonders bei halbtransparenten Karten. Die
+         Farbe traegt deshalb das Symbol, so wie es die uebrigen Karten in
+         Home Assistant halten. */
       .kachel {
         display: flex; align-items: center; gap: calc(14px * var(--skala));
-        padding: calc(12px * var(--skala));
-        border-radius: 12px;
-        border: 1px solid var(--divider-color);
-        border-left: 5px solid var(--secondary-text-color);
         cursor: pointer;
       }
-      .kachel.gut { border-left-color: var(--success-color, #2e9e5b); }
-      .kachel.aktiv { border-left-color: var(--primary-color); }
-      .kachel.warn { border-left-color: var(--warning-color); }
-      .kachel.schlecht { border-left-color: var(--error-color); }
       .kachel.aus { opacity: .6; }
       .ring {
         width: calc(46px * var(--skala)); height: calc(46px * var(--skala));
@@ -354,7 +358,24 @@ class AlarmanlageCard extends HTMLElement {
       }
       .symbol {
         --mdc-icon-size: calc(26px * var(--skala));
-        color: var(--primary-text-color);
+        color: var(--secondary-text-color);
+      }
+      /* color-mix statt fester Farbwerte: Der getoente Kreis folgt damit
+         jedem Theme, auch einem selbstgebauten. */
+      .kachel.gut .ring {
+        background: color-mix(in srgb, var(--success-color, #2e9e5b) 20%, transparent);
+      }
+      .kachel.gut .symbol { color: var(--success-color, #2e9e5b); }
+      .kachel.aktiv .ring {
+        background: color-mix(in srgb, var(--primary-color) 20%, transparent);
+      }
+      .kachel.aktiv .symbol { color: var(--primary-color); }
+      .kachel.warn .ring {
+        background: color-mix(in srgb, var(--warning-color) 22%, transparent);
+      }
+      .kachel.warn .symbol { color: var(--warning-color); }
+      .kachel.schlecht .ring {
+        background: color-mix(in srgb, var(--error-color) 22%, transparent);
       }
       .kachel.schlecht .symbol { color: var(--error-color); }
       .kachel.schlecht .ring { animation: pochen 1s infinite; }
@@ -387,6 +408,10 @@ class AlarmanlageCard extends HTMLElement {
       }
       .balken.schlecht > div { background: var(--error-color); }
 
+      .trenner {
+        height: 1px; background: var(--divider-color); opacity: .5;
+        margin: calc(2px * var(--skala)) 0;
+      }
       .zeile {
         display: flex; align-items: center; gap: 8px;
         font-size: calc(13px * var(--skala)); color: var(--secondary-text-color);
@@ -404,14 +429,18 @@ class AlarmanlageCard extends HTMLElement {
         flex: 1 1 calc(90px * var(--skala));
         min-width: 0;
         padding: calc(9px * var(--skala)) calc(8px * var(--skala));
-        border-radius: 10px;
-        border: 1px solid var(--divider-color);
-        background: var(--card-background-color);
+        border-radius: 12px;
+        border: 0;
+        /* Aus der Textfarbe gemischt, nicht aus dem Kartenhintergrund:
+           Auf halbtransparenten Karten ist der naemlich fast unsichtbar. */
+        background: color-mix(in srgb, var(--primary-text-color) 8%, transparent);
         color: var(--primary-text-color);
         font: inherit; font-size: calc(13px * var(--skala));
         cursor: pointer;
       }
-      .knopf:hover { border-color: var(--primary-color); }
+      .knopf:hover {
+        background: color-mix(in srgb, var(--primary-text-color) 14%, transparent);
+      }
       .knopf.an {
         background: var(--primary-color);
         border-color: var(--primary-color);

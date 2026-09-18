@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.9.1.
+Für Home Assistant. Stand: Fassung 1.9.2.
 
 ---
 
@@ -660,6 +660,10 @@ knoepfe: true
 
 `textgroesse` steht auf *gross*, weil solche Karten regelmäßig auch an einem
 Wandtablett hängen und 11-px-Text dort aus anderthalb Metern unlesbar ist.
+
+Die Karte zeichnet **keinen eigenen Kasten**: Farben, Abstände und der
+Hintergrund kommen aus Ihrem Theme, die Farbe des Zustands trägt das Symbol.
+So sitzt sie neben den übrigen Karten, statt aufzufallen.
 
 Bei laufendem Alarm erscheint zusätzlich ein roter Knopf **Alarm aus**.
 

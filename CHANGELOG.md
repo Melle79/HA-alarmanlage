@@ -1,5 +1,22 @@
 # Änderungen
 
+## 1.9.2 – 18.09.2026
+
+**Die Karte fügt sich ins Theme ein.** Sie zeichnete innen einen eigenen
+Kasten mit Rahmen und farbigem Streifen – auf einem Dashboard mit eigenem
+Theme, besonders mit halbtransparenten Karten, ein Fremdkörper.
+
+* **Kein Kasten im Kasten mehr.** Die Farbe trägt jetzt das Symbol: ein
+  getönter Kreis in der Farbe des Zustands, so wie es die übrigen Karten in
+  Home Assistant halten.
+* Getönt wird über `color-mix` aus den Theme-Farben, nicht über feste
+  Werte – damit folgt der Kreis auch einem selbstgebauten Theme.
+* **Die Knöpfe** haben keinen Rahmen mehr und nehmen ihren Hintergrund aus
+  der Textfarbe. Aus dem Kartenhintergrund gemischt wären sie auf
+  halbtransparenten Karten fast unsichtbar.
+* Eine feine **Trennlinie** über den Zeilen, aber nur, wenn darunter etwas
+  steht – eine Trennlinie ohne etwas darunter trennt nichts.
+
 ## 1.9.1 – 18.09.2026
 
 **Während einer laufenden Frist meldet die Anlage jede Sekunde.** Vorher
