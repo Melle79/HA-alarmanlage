@@ -4,7 +4,7 @@
  * auch nicht: Am Bedienfeld hängt alles als Attribut. Eine Quelle, keine
  * zweite Wahrheit.
  *
- * Zwei Fallen, die hier schon zugeschlagen haben und deshalb ausdrücklich
+ * Drei Fallen, die hier schon zugeschlagen haben und deshalb ausdrücklich
  * vermieden werden:
  *  - Kein Apostroph-Rückwärts in einem CSS-Kommentar. Das CSS lebt in einem
  *    Template-String; ein einziges Zeichen beendet ihn, und die Karte
@@ -12,14 +12,13 @@
  *  - box-sizing wird selbst gesetzt. Ein Schattenbaum erbt keinen Reset von
  *    der Seite, und ohne ihn kommen Rand und Polster zur Spaltenbreite
  *    hinzu.
+ *  - Auf keine Entität wird ohne Prüfung zugegriffen. Eine gelöschte
+ *    Entität hat schon einmal die ganze Karte zum Absturz gebracht.
  */
 
 const ZUSTAND = {
   disarmed: { text: 'Entschärft', symbol: 'mdi:shield-off-outline', farbe: 'gut' },
   arming: { text: 'Schaltet scharf', symbol: 'mdi:shield-sync-outline', farbe: 'warn' },
-  /* Der Text nennt nur die Art der Schärfung. Welcher Modus gilt, sagt
-     der Name des Modus daneben - sonst stünde "Scharf - Urlaub - Urlaub"
-     da, sobald jemand seinen Modus wie den Zustand benennt. */
   armed_away: { text: 'Scharf', symbol: 'mdi:shield-lock', farbe: 'aktiv' },
   armed_vacation: { text: 'Scharf', symbol: 'mdi:shield-airplane', farbe: 'aktiv' },
   armed_night: { text: 'Scharf', symbol: 'mdi:shield-moon', farbe: 'aktiv' },
@@ -33,6 +32,22 @@ const ZUSTAND = {
 
 const SKALEN = { klein: 1, normal: 1.1, gross: 1.2, riesig: 1.45 };
 
+const VORGABE = {
+  entity: 'alarm_control_panel.alarmanlage_bedienfeld',
+  hausmodus_entity: 'select.alarmanlage_hausmodus',
+  titel: 'Alarmanlage',
+  textgroesse: 'gross',
+  knoepfe: true,
+  zeige_marken: true,
+  zeige_fortschritt: true,
+  zeige_kontakte: true,
+  zeige_ausloeser: true,
+};
+
+/* ===================================================================
+ * Die Karte
+ * =================================================================== */
+
 class AlarmanlageCard extends HTMLElement {
   constructor() {
     super();
@@ -41,18 +56,23 @@ class AlarmanlageCard extends HTMLElement {
     this._takt = null;
   }
 
+  static getConfigElement() {
+    return document.createElement('alarmanlage-card-editor');
+  }
+
+  static getStubConfig(hass) {
+    /* Das Bedienfeld suchen, statt den Namen zu raten: Wer den
+       Entitätspräfix geändert hat, bekommt sonst eine leere Karte. */
+    const gefunden = Object.keys(hass?.states || {})
+      .find((e) => e.startsWith('alarm_control_panel.')
+        && hass.states[e].attributes.hausmodus !== undefined);
+    return { ...VORGABE, entity: gefunden || VORGABE.entity };
+  }
+
   setConfig(konfig) {
-    this._konfig = {
-      entity: konfig.entity || 'alarm_control_panel.alarmanlage_bedienfeld',
-      hausmodus_entity: konfig.hausmodus_entity || 'select.alarmanlage_hausmodus',
-      titel: konfig.titel ?? konfig.title ?? 'Alarmanlage',
-      /* Vorgabe gross, weil die Karte auch am Wandtablett im Flur hängt und
-         11-px-Text dort aus anderthalb Metern unlesbar ist. */
-      textgroesse: konfig.textgroesse || 'gross',
-      knoepfe: konfig.knoepfe !== false,
-      protokollzeilen: konfig.protokollzeilen ?? 0,
-    };
+    this._konfig = { ...VORGABE, ...(konfig || {}) };
     this._gezeichnet = false;
+    if (this.shadowRoot) this.shadowRoot.innerHTML = '';
   }
 
   set hass(hass) {
@@ -69,10 +89,8 @@ class AlarmanlageCard extends HTMLElement {
     this._takt = null;
   }
 
-  getCardSize() { return 4; }
-
-  static getStubConfig() {
-    return { entity: 'alarm_control_panel.alarmanlage_bedienfeld' };
+  getCardSize() {
+    return this._konfig?.knoepfe === false ? 3 : 4;
   }
 
   _skala() {
@@ -93,8 +111,9 @@ class AlarmanlageCard extends HTMLElement {
     const wurzel = this.shadowRoot;
     if (!panel) {
       wurzel.querySelector('.inhalt').innerHTML =
-        '<div class="leer">Die Entität ' + this._konfig.entity
-        + ' gibt es nicht. Läuft das Add-on?</div>';
+        '<div class="leer">Die Entität <code>'
+        + this._entschaerft(this._konfig.entity)
+        + '</code> gibt es nicht. Läuft das Add-on?</div>';
       return;
     }
 
@@ -114,12 +133,20 @@ class AlarmanlageCard extends HTMLElement {
       : '';
 
     this._fristZeichnen();
+    this._markenZeichnen(a);
+    this._zeilenZeichnen(a);
+    this._knoepfeZeichnen(panel);
+  }
 
-    /* Hinweise. Der Trockenlauf steht ganz oben: Eine Karte, die "scharf"
-       zeigt, während das Add-on nichts hinausschickt, wäre die
-       gefährlichste Anzeige im ganzen Haus. */
-    const hinweise = wurzel.querySelector('.hinweise');
+  /* Alles, was man wissen muss, bevor man sich auf die Anlage verlässt.
+     Der Trockenlauf steht ganz oben: Eine Karte, die "scharf" zeigt,
+     während das Add-on nichts hinausschickt, wäre die gefährlichste
+     Anzeige im ganzen Haus. */
+  _markenZeichnen(a) {
+    const hinweise = this.shadowRoot.querySelector('.marken');
     hinweise.innerHTML = '';
+    hinweise.style.display = this._konfig.zeige_marken === false ? 'none' : '';
+    if (this._konfig.zeige_marken === false) return;
     const marke = (text, art) => {
       const k = document.createElement('span');
       k.className = 'marke ' + (art || '');
@@ -130,35 +157,48 @@ class AlarmanlageCard extends HTMLElement {
     if (a.automatik === false) marke('Automatik aus', 'warn');
     if (a.nachlaufsperre) marke('Nachlaufsperre');
     if (a.verbunden === false) marke('Keine Verbindung', 'schlecht');
-    if ((a.offene_alarme || []).length) {
-      marke('Alarm: ' + a.offene_alarme.join(', '), 'schlecht');
+    for (const ort of a.offene_alarme || []) marke('Alarm: ' + ort, 'schlecht');
+    if ((a.ueberbrueckt || []).length) {
+      marke((a.ueberbrueckt || []).length + ' überbrückt');
     }
+  }
+
+  _zeilenZeichnen(a) {
+    const zeigen = (wahl, klasse, symbol, text) => {
+      const kasten = this.shadowRoot.querySelector('.' + klasse);
+      const an = wahl !== false && !!text;
+      kasten.style.display = an ? '' : 'none';
+      if (!an) return;
+      kasten.innerHTML = '';
+      const icon = document.createElement('ha-icon');
+      icon.setAttribute('icon', symbol);
+      kasten.appendChild(icon);
+      const span = document.createElement('span');
+      span.textContent = text;
+      kasten.appendChild(span);
+    };
 
     const offen = a.offene_kontakte || [];
-    const offenKasten = wurzel.querySelector('.offen');
-    offenKasten.innerHTML = offen.length
-      ? '<span class="klein">Offen: </span>' + offen.join(', ')
-      : '';
-    offenKasten.style.display = offen.length ? '' : 'none';
-
-    const ausloeser = wurzel.querySelector('.ausloeser');
-    ausloeser.textContent = a.letzter_ausloeser
-      ? 'Zuletzt: ' + a.letzter_ausloeser : '';
-    ausloeser.style.display = a.letzter_ausloeser ? '' : 'none';
-
-    this._knoepfeZeichnen(panel);
+    zeigen(this._konfig.zeige_kontakte, 'offen', 'mdi:door-open',
+      offen.length ? 'Offen: ' + offen.join(', ') : '');
+    zeigen(this._konfig.zeige_ausloeser, 'ausloeser', 'mdi:motion-sensor',
+      a.letzter_ausloeser ? 'Zuletzt: ' + a.letzter_ausloeser : '');
   }
 
   _fristZeichnen() {
     if (!this._gezeichnet || !this._hass) return;
     const panel = this._hass.states[this._konfig.entity];
     const feld = this.shadowRoot.querySelector('.frist');
+    const balken = this.shadowRoot.querySelector('.balken');
     if (!feld || !panel) return;
     const a = panel.attributes || {};
+
     if (a.rest_sekunden === null || a.rest_sekunden === undefined) {
       feld.textContent = '';
+      balken.style.display = 'none';
       return;
     }
+
     /* Der Wert stammt aus der letzten Meldung. Wie viel davon inzwischen
        vergangen ist, rechnet die Karte selbst mit – sonst stünde dreißig
        Sekunden lang dieselbe Zahl da. */
@@ -166,8 +206,8 @@ class AlarmanlageCard extends HTMLElement {
     const rest = Math.max(0,
       Math.round(a.rest_sekunden - (Date.now() - gemeldet) / 1000));
     const minuten = Math.floor(rest / 60);
-    const sekunden = String(rest % 60).padStart(2, '0');
-    const zeit = minuten + ':' + sekunden;
+    const zeit = minuten + ':' + String(rest % 60).padStart(2, '0');
+
     feld.textContent = panel.state === 'arming'
       ? 'noch ' + zeit + ' zum Verlassen'
       : panel.state === 'pending'
@@ -175,11 +215,22 @@ class AlarmanlageCard extends HTMLElement {
         : panel.state === 'triggered'
           ? 'Alarm läuft noch ' + zeit
           : 'noch ' + zeit;
+
+    const gesamt = a.frist_gesamt;
+    if (this._konfig.zeige_fortschritt === false || !gesamt) {
+      balken.style.display = 'none';
+      return;
+    }
+    balken.style.display = '';
+    const anteil = Math.max(0, Math.min(1, rest / gesamt));
+    balken.firstElementChild.style.width = (anteil * 100) + '%';
+    balken.className = 'balken ' + (ZUSTAND[panel.state] || {}).farbe;
   }
 
   _knoepfeZeichnen(panel) {
     const kasten = this.shadowRoot.querySelector('.knoepfe');
-    if (!this._konfig.knoepfe) { kasten.style.display = 'none'; return; }
+    if (this._konfig.knoepfe === false) { kasten.style.display = 'none'; return; }
+    kasten.style.display = '';
 
     const wahl = this._hass.states[this._konfig.hausmodus_entity];
     const optionen = wahl?.attributes?.options || [];
@@ -236,20 +287,23 @@ class AlarmanlageCard extends HTMLElement {
   }
 
   _geruest() {
+    const titel = this._konfig.titel
+      ? ' header="' + this._entschaerft(this._konfig.titel) + '"' : '';
     return '<style>' + this._css() + '</style>'
-      + '<ha-card header="' + this._entschaerft(this._konfig.titel) + '">'
+      + '<ha-card' + titel + '>'
       + '<div class="inhalt">'
-      + '  <div class="hinweise"></div>'
+      + '  <div class="marken"></div>'
       + '  <div class="kachel">'
       + '    <div class="ring"><ha-icon class="symbol"></ha-icon></div>'
       + '    <div class="texte">'
       + '      <div class="name"></div>'
       + '      <div class="seit"></div>'
       + '      <div class="frist"></div>'
+      + '      <div class="balken"><div></div></div>'
       + '    </div>'
       + '  </div>'
-      + '  <div class="offen"></div>'
-      + '  <div class="ausloeser"></div>'
+      + '  <div class="zeile offen"></div>'
+      + '  <div class="zeile ausloeser"></div>'
       + '  <div class="knoepfe"></div>'
       + '</div>'
       + '</ha-card>';
@@ -261,13 +315,15 @@ class AlarmanlageCard extends HTMLElement {
   }
 
   _css() {
-    const skala = this._skala();
     return `
-      :host { --skala: ${skala}; }
+      :host { --skala: ${this._skala()}; }
       * { box-sizing: border-box; }
-      .inhalt { padding: 0 16px 16px; display: flex; flex-direction: column; gap: calc(10px * var(--skala)); }
-      .hinweise { display: flex; gap: 6px; flex-wrap: wrap; }
-      .hinweise:empty { display: none; }
+      .inhalt {
+        padding: 0 16px 16px; display: flex; flex-direction: column;
+        gap: calc(10px * var(--skala));
+      }
+      .marken { display: flex; gap: 6px; flex-wrap: wrap; }
+      .marken:empty { display: none; }
       .marke {
         font-size: calc(11px * var(--skala));
         padding: calc(3px * var(--skala)) calc(9px * var(--skala));
@@ -277,6 +333,7 @@ class AlarmanlageCard extends HTMLElement {
       }
       .marke.warn { border-color: var(--warning-color); color: var(--warning-color); }
       .marke.schlecht { border-color: var(--error-color); color: var(--error-color); }
+
       .kachel {
         display: flex; align-items: center; gap: calc(14px * var(--skala));
         padding: calc(12px * var(--skala));
@@ -295,7 +352,10 @@ class AlarmanlageCard extends HTMLElement {
         border-radius: 50%; display: grid; place-items: center;
         background: var(--secondary-background-color); flex: 0 0 auto;
       }
-      .symbol { --mdc-icon-size: calc(26px * var(--skala)); color: var(--primary-text-color); }
+      .symbol {
+        --mdc-icon-size: calc(26px * var(--skala));
+        color: var(--primary-text-color);
+      }
       .kachel.schlecht .symbol { color: var(--error-color); }
       .kachel.schlecht .ring { animation: pochen 1s infinite; }
       @keyframes pochen {
@@ -305,7 +365,8 @@ class AlarmanlageCard extends HTMLElement {
       @media (prefers-reduced-motion: reduce) {
         .kachel.schlecht .ring { animation: none; }
       }
-      .texte { min-width: 0; }
+
+      .texte { min-width: 0; flex: 1 1 auto; }
       .name { font-size: calc(17px * var(--skala)); font-weight: 600; }
       .seit { font-size: calc(12px * var(--skala)); color: var(--secondary-text-color); }
       .frist {
@@ -313,10 +374,31 @@ class AlarmanlageCard extends HTMLElement {
         color: var(--warning-color); font-variant-numeric: tabular-nums;
       }
       .frist:empty { display: none; }
-      .offen, .ausloeser {
-        font-size: calc(13px * var(--skala)); color: var(--secondary-text-color);
+
+      /* Der Balken zeigt, wie viel von der Frist noch übrig ist. Eine Zahl
+         allein sagt nicht, ob es knapp wird. */
+      .balken {
+        height: 4px; border-radius: 999px; margin-top: 6px;
+        background: var(--divider-color); overflow: hidden;
       }
-      .klein { opacity: .75; }
+      .balken > div {
+        height: 100%; width: 0; border-radius: 999px;
+        background: var(--warning-color); transition: width 1s linear;
+      }
+      .balken.schlecht > div { background: var(--error-color); }
+
+      .zeile {
+        display: flex; align-items: center; gap: 8px;
+        font-size: calc(13px * var(--skala)); color: var(--secondary-text-color);
+        min-width: 0;
+      }
+      .zeile ha-icon {
+        --mdc-icon-size: calc(16px * var(--skala)); flex: 0 0 auto;
+      }
+      .zeile span {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+
       .knoepfe { display: flex; gap: 6px; flex-wrap: wrap; }
       .knopf {
         flex: 1 1 calc(90px * var(--skala));
@@ -339,12 +421,114 @@ class AlarmanlageCard extends HTMLElement {
         background: var(--error-color); border-color: var(--error-color);
         color: #fff; flex-basis: 100%;
       }
-      .leer { font-size: calc(13px * var(--skala)); color: var(--secondary-text-color); }
+      .leer {
+        font-size: calc(13px * var(--skala)); color: var(--secondary-text-color);
+      }
+      code { font-size: .9em; }
     `;
   }
 }
 
 customElements.define('alarmanlage-card', AlarmanlageCard);
+
+/* ===================================================================
+ * Der Editor
+ *
+ * Über ha-form, nicht über eigene Eingabefelder: Das bringt
+ * Entitätsauswahl, Schalter und Auswahllisten im Aussehen von Home
+ * Assistant mit, und es folgt dem Thema des Benutzers von selbst.
+ * =================================================================== */
+
+const FELDER = [
+  { name: 'titel', selector: { text: {} } },
+  {
+    name: 'entity',
+    required: true,
+    selector: { entity: { domain: 'alarm_control_panel' } },
+  },
+  {
+    name: 'hausmodus_entity',
+    selector: { entity: { domain: 'select' } },
+  },
+  {
+    name: 'textgroesse',
+    selector: {
+      select: {
+        mode: 'dropdown',
+        options: [
+          { value: 'klein', label: 'klein' },
+          { value: 'normal', label: 'normal' },
+          { value: 'gross', label: 'groß (Vorgabe)' },
+          { value: 'riesig', label: 'riesig – für Wandtablets' },
+        ],
+      },
+    },
+  },
+  {
+    name: 'anzeige',
+    type: 'expandable',
+    schema: [
+      { name: 'knoepfe', selector: { boolean: {} } },
+      { name: 'zeige_marken', selector: { boolean: {} } },
+      { name: 'zeige_fortschritt', selector: { boolean: {} } },
+      { name: 'zeige_kontakte', selector: { boolean: {} } },
+      { name: 'zeige_ausloeser', selector: { boolean: {} } },
+    ],
+  },
+];
+
+const BESCHRIFTUNG = {
+  titel: 'Überschrift',
+  entity: 'Bedienfeld',
+  hausmodus_entity: 'Hausmodus (für die Knöpfe)',
+  textgroesse: 'Textgröße',
+  anzeige: 'Was die Karte zeigt',
+  knoepfe: 'Knöpfe für den Hausmodus',
+  zeige_marken: 'Hinweise (Trockenlauf, Nachlaufsperre …)',
+  zeige_fortschritt: 'Balken während der Verzögerung',
+  zeige_kontakte: 'Offene Kontakte',
+  zeige_ausloeser: 'Letzter Auslöser',
+};
+
+const ERKLAERUNG = {
+  entity: 'Das Bedienfeld des Alarmanlagen-Managers. Es trägt alle Angaben '
+    + 'als Attribute – die Karte braucht sonst nichts.',
+  textgroesse: 'Alles skaliert mit: Schrift, Symbole, Knöpfe. „Riesig“ ist '
+    + 'für Tablets gedacht, die man aus anderthalb Metern abliest.',
+};
+
+class AlarmanlageCardEditor extends HTMLElement {
+  setConfig(konfig) {
+    this._konfig = { ...VORGABE, ...(konfig || {}) };
+    this._zeichnen();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    if (this._form) this._form.hass = hass;
+  }
+
+  _zeichnen() {
+    if (!this._form) {
+      this._form = document.createElement('ha-form');
+      this._form.addEventListener('value-changed', (ereignis) => {
+        ereignis.stopPropagation();
+        this.dispatchEvent(new CustomEvent('config-changed', {
+          detail: { config: ereignis.detail.value },
+          bubbles: true, composed: true,
+        }));
+      });
+      this.appendChild(this._form);
+    }
+    this._form.hass = this._hass;
+    this._form.schema = FELDER;
+    this._form.data = this._konfig;
+    this._form.computeLabel = (feld) => BESCHRIFTUNG[feld.name] || feld.name;
+    this._form.computeHelper = (feld) => ERKLAERUNG[feld.name] || '';
+  }
+}
+
+customElements.define('alarmanlage-card-editor', AlarmanlageCardEditor);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
@@ -353,6 +537,7 @@ window.customCards.push({
   description: 'Zustand, Hausmodus und offene Kontakte des '
     + 'Alarmanlagen-Managers',
   preview: true,
+  documentationURL: 'https://github.com/Melle79/HA-alarmanlage',
 });
 
 console.info('%c ALARMANLAGE-CARD %c geladen ',

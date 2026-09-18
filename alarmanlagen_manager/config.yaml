@@ -1,5 +1,5 @@
 name: Alarmanlagen-Manager
-version: "1.8.1"
+version: "1.9.0"
 slug: alarmanlagen_manager
 description: Einbruch- und Rauchmeldung mit eigener Oberfläche – Melder, Modi, Verzögerungen und Meldewege ohne eine einzige Automation
 url: https://github.com/Melle79/HA-alarmanlage

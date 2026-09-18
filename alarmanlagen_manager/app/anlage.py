@@ -112,6 +112,19 @@ class Anlage:
         rest = None
         if z.get("frist"):
             rest = max(0, int(z["frist"] - time.time()))
+        # Wie lang die laufende Frist insgesamt ist. Ohne das kann eine
+        # Karte keinen Fortschritt zeigen - sie kennt nur den Rest und
+        # wüsste nicht, wovon.
+        gesamt = None
+        panel = z.get("panel")
+        if panel == "arming":
+            gesamt = self._modus(modus).get("ausgehzeit")
+        elif panel == "pending":
+            gesamt = self._modus(modus).get("eintrittszeit")
+        elif panel == "triggered":
+            linie = z.get("ausloeser_linie") or "einbruch"
+            gesamt = (store.get("linien", linie, "ausloesezeit", default=0)
+                      or None)
         return {
             "panel": z.get("panel", "disarmed"),
             "hausmodus": z.get("hausmodus", "zuhause"),
@@ -119,6 +132,7 @@ class Anlage:
             "modus_name": self._modus(modus).get("name") if modus else None,
             "seit": z.get("seit"),
             "rest_sekunden": rest,
+            "frist_gesamt": gesamt,
             "ausloeser": z.get("ausloeser"),
             "ausloeser_zeit": z.get("ausloeser_zeit"),
             "ausloeser_linie": z.get("ausloeser_linie"),

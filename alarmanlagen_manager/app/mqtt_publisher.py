@@ -342,6 +342,7 @@ class MqttPublisher:
             "hausmodus": hausmodus,
             "hausmodus_name": anzeige,
             "rest_sekunden": zustand.get("rest_sekunden"),
+            "frist_gesamt": zustand.get("frist_gesamt"),
             "zustand_seit": _iso(zustand.get("seit")),
             "letzter_ausloeser": zustand.get("ausloeser"),
             "ausloeser_linie": zustand.get("ausloeser_linie"),

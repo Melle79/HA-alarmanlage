@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.8.1.
+Für Home Assistant. Stand: Fassung 1.9.0.
 
 ---
 
@@ -631,6 +631,10 @@ Für eigene Karten und Automationen liegt alles als Attribut bereit:
 Das Add-on legt `alarmanlage-card.js` nach `/config/www` und trägt sie als
 Lovelace-Ressource ein. **Kein HACS nötig.**
 
+Im Dashboard unter *Karte hinzufügen* steht sie als **Alarmanlage**. Sie
+bringt einen **Editor** mit: Bedienfeld auswählen, Textgröße wählen,
+anhaken, was zu sehen sein soll – YAML braucht es nur, wer es will.
+
 ```yaml
 type: custom:alarmanlage-card
 entity: alarm_control_panel.alarmanlage_bedienfeld
@@ -647,6 +651,10 @@ knoepfe: true
 | `titel` | `Alarmanlage` | Überschrift der Karte |
 | `textgroesse` | `gross` (1,2×) | Alles skaliert mit – Schrift, Symbole, Knöpfe |
 | `knoepfe` | `true` | Hausmodus-Knöpfe anzeigen |
+| `zeige_marken` | `true` | Hinweise: Trockenlauf, Nachlaufsperre, offene Alarme |
+| `zeige_fortschritt` | `true` | Balken während der Verzögerungen |
+| `zeige_kontakte` | `true` | Zeile mit den offenen Kontakten |
+| `zeige_ausloeser` | `true` | Zeile mit dem letzten Auslöser |
 
 `textgroesse` steht auf *gross*, weil solche Karten regelmäßig auch an einem
 Wandtablett hängen und 11-px-Text dort aus anderthalb Metern unlesbar ist.

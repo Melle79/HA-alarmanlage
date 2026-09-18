@@ -111,6 +111,10 @@ Dieses Add-on legt all das an eine Stelle und gibt ihr eine Oberfläche.
 ### 🃏 Dashboard-Karte
 - `custom:alarmanlage-card` – bringt das Add-on selbst mit und meldet sie als
   Lovelace-Ressource an. **Kein HACS nötig**
+- **Mit visuellem Editor**: Bedienfeld auswählen, Textgröße wählen, anhaken
+  was zu sehen sein soll – YAML braucht es nur, wer es will
+- Fortschrittsbalken während der Verzögerungen, offene Kontakte und letzter
+  Auslöser als eigene Zeilen
 
 ---
 

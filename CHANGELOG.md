@@ -1,5 +1,26 @@
 # Änderungen
 
+## 1.9.0 – 18.09.2026
+
+**Die Dashboard-Karte hat einen Editor.** Sie lässt sich jetzt über die
+Oberfläche einrichten – Bedienfeld auswählen, Textgröße wählen, anhaken was
+zu sehen sein soll. Kein YAML mehr nötig.
+
+* **Visueller Editor** über `ha-form`: Entitätsauswahl, Auswahllisten und
+  Schalter im Aussehen von Home Assistant, mit deutschen Beschriftungen und
+  Erklärungen.
+* **Fortschrittsbalken** während Ausgeh- und Eintrittsverzögerung und
+  während der Auslösezeit. Eine Zahl allein sagt nicht, ob es knapp wird.
+  Dafür veröffentlicht das Bedienfeld neu das Attribut `frist_gesamt`.
+* **Zeilen für offene Kontakte und den letzten Auslöser** mit Symbol, jede
+  einzeln abschaltbar.
+* **Überbrückte Melder** stehen als Hinweis in der Kopfzeile.
+* Die Karte schlägt beim Einfügen selbst das richtige Bedienfeld vor,
+  statt den Namen zu raten – wer den Entitätspräfix geändert hat, bekam
+  sonst eine leere Karte.
+* Alle Entitätszugriffe sind abgesichert. Eine gelöschte Entität hat schon
+  einmal eine ganze Dashboard-Karte zum Absturz gebracht.
+
 ## 1.8.1 – 18.09.2026
 
 **„Wieder einschalten“ schaltet den Trockenlauf nicht mehr blind an.**
