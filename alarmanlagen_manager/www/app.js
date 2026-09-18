@@ -281,17 +281,19 @@ $('schalter-automatik').onchange = (e) =>
 /* ------------------------------------------------------------- Melder */
 
 const ARTEN = {
-  bewegung: 'Bewegung', kontakt: 'Kontakt', rauch: 'Rauch',
-  wasser: 'Wasser', erschuetterung: 'Erschütterung', sonstige: 'sonstige',
+  bewegung: 'Bewegung', kontakt: 'Kontakt', erschuetterung: 'Erschütterung',
+  rauch: 'Rauch', gas: 'Gas', kohlenmonoxid: 'Kohlenmonoxid',
+  hitze: 'Hitze', wasser: 'Wasser', sonstige: 'sonstige',
 };
 
 /* Die Mehrzahl steht ausgeschrieben da. "2 Kontakt im Haus" liest sich wie
  * ein Übersetzungsfehler, und der Satz steht an der auffälligsten Stelle
  * der Seite. */
 const ARTEN_MEHRZAHL = {
-  bewegung: 'Bewegungsmelder', kontakt: 'Kontakte', rauch: 'Rauchmelder',
-  wasser: 'Wassermelder', erschuetterung: 'Erschütterungsmelder',
-  sonstige: 'sonstige Melder',
+  bewegung: 'Bewegungsmelder', kontakt: 'Kontakte',
+  erschuetterung: 'Erschütterungsmelder', rauch: 'Rauchmelder',
+  gas: 'Gasmelder', kohlenmonoxid: 'Kohlenmonoxidmelder',
+  hitze: 'Hitzemelder', wasser: 'Wassermelder', sonstige: 'sonstige Melder',
 };
 
 /* Welche Melderarten auf welche Linie gehören. Daraus entsteht der
@@ -300,14 +302,18 @@ const ARTEN_MEHRZAHL = {
  * Alarmanlage stehen, fallen sonst niemandem auf. */
 const LINIENARTEN = {
   einbruch: ['bewegung', 'kontakt', 'erschuetterung'],
-  rauch: ['rauch'],
+  /* Rauch, Gas, Kohlenmonoxid und Hitze liegen auf einer Linie: Sie gelten
+   * rund um die Uhr und werden gleich gemeldet. Dieselbe Gefahr sind sie
+   * deshalb nicht - Kohlenmonoxid ist geruchlos, unsichtbar und brennt
+   * nicht. */
+  rauch: ['rauch', 'gas', 'kohlenmonoxid', 'hitze'],
   wasser: ['wasser'],
 };
 
 /* "sonstige" sind meist Diagnosemelder – bei Sven 237 von 291. Vorn stehen
  * sie nur im Weg. */
-const ARTORDNUNG = ['rauch', 'wasser', 'bewegung', 'kontakt',
-  'erschuetterung', 'sonstige'];
+const ARTORDNUNG = ['rauch', 'kohlenmonoxid', 'gas', 'hitze', 'wasser',
+  'bewegung', 'kontakt', 'erschuetterung', 'sonstige'];
 
 function melderZeichnen() {
   const liste = $('melder-liste');
@@ -727,7 +733,12 @@ function melderKarte(m, bereiche, zustaende, war_offen) {
  * sichtbar ist, wogegen man schreibt. */
 function vorgabetext(m) {
   const stufe = Z.konfig.eskalation?.[m.linie]?.alarm;
-  const vorlage = stufe?.text || {
+  const nachArt = {
+    gas: 'Achtung! {ort} meldet Gas.',
+    kohlenmonoxid: 'Achtung! {ort} meldet Kohlenmonoxid.',
+    hitze: 'Achtung! {ort} meldet Hitze.',
+  }[m.art];
+  const vorlage = stufe?.text || nachArt || {
     einbruch: 'Bewegung erkannt: {ausloeser}. Modus: {modus}.',
     rauch: 'Achtung! {ort} meldet Rauch.',
     wasser: 'Achtung! {ort} meldet Wasser.',
@@ -1961,7 +1972,8 @@ const SCHRITTE = [
      * Auswahl, wäre aber nirgends zu sehen – angehakt und unerreichbar. */
     const gruppen = [['bewegung', 'Bewegung'],
       ['kontakt', 'Türen und Fenster'], ['erschuetterung', 'Erschütterung'],
-      ['rauch', 'Rauch und Gas'], ['wasser', 'Wasser']];
+      ['rauch', 'Rauch'], ['kohlenmonoxid', 'Kohlenmonoxid'], ['gas', 'Gas'],
+      ['hitze', 'Hitze'], ['wasser', 'Wasser']];
     const bekannteArten = new Set(gruppen.map(([a]) => a));
     gruppen.push(['sonstige', 'Sonstige']);
 

@@ -54,7 +54,9 @@ Dieses Add-on legt all das an eine Stelle und gibt ihr eine Oberfläche.
 ### 🔥 Gefahrenlinien
 - **Einbruch** zählt nur im scharfen Zustand
 - **Rauch** und **Wasser** rund um die Uhr – mit eigenen Meldewegen und
-  eigenen Sensoren. Sie rühren das Bedienfeld nicht an: Ein Rauchmelder ist
+  eigenen Sensoren. Auf der Rauchlinie unterscheidet das Add-on **Rauch,
+  Gas, Kohlenmonoxid und Hitze**: gleiche Meldewege, aber jede Gefahr wird
+  beim Namen genannt. Sie rühren das Bedienfeld nicht an: Ein Rauchmelder ist
   kein Einbruch, und wer die Einbruchanlage entschärft, hat nicht das Feuer
   gelöscht
 
@@ -218,7 +220,7 @@ anderthalb Metern unlesbar ist.
 python3 -m unittest discover -s tests
 ```
 
-114 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
+123 Tests, nur PyYAML als Abhängigkeit. Sie halten die Fälle fest, an denen
 echte Anlagen gescheitert sind – die Nacht mit 82 unterdrückten Bewegungen,
 das Cloud-Schloss, das zu spät meldet, die Anlage, die scharf stand, während
 die Familie schlief, und das Schloss, das dauerhaft „offen“ meldete

@@ -302,6 +302,10 @@ def _beenden(signum, rahmen):  # noqa: ARG001
 
 def main() -> None:
     protokoll.kuerzen()
+    try:
+        uebernahme.arten_verfeinern()
+    except Exception as err:  # noqa: BLE001
+        log.warning("Arten nicht verfeinerbar: %s", err)
 
     publisher.on_befehl = _mqtt_befehl
     anlage.on_zustand = publisher.veroeffentlichen

@@ -26,8 +26,18 @@ _states_cache: tuple[float, list] = (0.0, [])
 BEWEGUNG = {"motion", "occupancy", "presence"}
 KONTAKT = {"door", "window", "opening", "garage_door"}
 ERSCHUETTERUNG = {"vibration", "tamper"}
-RAUCH = {"smoke", "gas", "carbon_monoxide", "heat"}
 WASSER = {"moisture"}
+
+# Rauch, Gas, Kohlenmonoxid und Hitze gehören auf dieselbe Linie - sie
+# gelten rund um die Uhr und werden gleich gemeldet -, sind aber nicht
+# dasselbe. Kohlenmonoxid ist geruchlos, unsichtbar und brennt nicht; wer
+# nachts geweckt wird und "Rauch" liest, sucht nach dem Falschen.
+GEFAHR = {
+    "smoke": "rauch",
+    "gas": "gas",
+    "carbon_monoxide": "kohlenmonoxid",
+    "heat": "hitze",
+}
 
 
 def verfuegbar() -> bool:
@@ -149,8 +159,8 @@ def melderkandidaten(eigener_praefix: str = "") -> list:
             art = "kontakt"
         elif klasse in ERSCHUETTERUNG:
             art = "erschuetterung"
-        elif klasse in RAUCH:
-            art = "rauch"
+        elif klasse in GEFAHR:
+            art = GEFAHR[klasse]
         elif klasse in WASSER:
             art = "wasser"
         else:

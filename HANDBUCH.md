@@ -1,6 +1,6 @@
 # Handbuch – Alarmanlagen-Manager
 
-Für Home Assistant. Stand: Fassung 1.7.4.
+Für Home Assistant. Stand: Fassung 1.8.0.
 
 ---
 
@@ -66,6 +66,12 @@ Fischefüttern kommt und abends nicht wieder scharf geschaltet wird.
 
 * **Nur wenn scharf** (Einbruch): Melder zählen, wenn die Anlage scharf ist.
 * **Rund um die Uhr** (Rauch, Wasser): Melder zählen immer.
+
+Auf der Rauchlinie liegen vier Arten: **Rauch**, **Gas**, **Kohlenmonoxid**
+und **Hitze**. Sie werden gleich gemeldet, sind aber nicht dieselbe Gefahr –
+Kohlenmonoxid ist geruchlos, unsichtbar und brennt nicht. Der vorgegebene
+Meldetext richtet sich deshalb nach der Art des Melders, nicht nach der
+Linie: „Achtung! Wohnzimmer meldet Kohlenmonoxid.“
 
 Rauch kümmert es nicht, ob jemand zu Hause ist. Und wer die Einbruchanlage
 entschärft, hat damit nicht das Feuer gelöscht. Die Dauerlinien rühren den
@@ -271,7 +277,7 @@ Reihenfolge wie hier.
 | Feld | Bedeutung |
 |---|---|
 | **Name** | Nur die Anzeige |
-| **Art** | Bewegung, Kontakt, Rauch, Wasser, Erschütterung |
+| **Art** | Bewegung, Kontakt, Erschütterung, Rauch, Gas, Kohlenmonoxid, Hitze, Wasser |
 | **Linie** | Auf welche Gefahrenlinie er gehört |
 | **Ort** | Wird vorgelesen. „Lunas Zimmer", nicht „RM Luna Rauch" |
 | **Löst aus bei** | Der Zustand, der als Auslösung gilt (fast immer `on`) |

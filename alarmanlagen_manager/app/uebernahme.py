@@ -210,12 +210,49 @@ def vorschlag() -> dict:
     }
 
 
+def arten_verfeinern() -> int:
+    """Rauchmelder, die in Wahrheit Gas oder Kohlenmonoxid melden.
+
+    Bis Fassung 1.7.4 fielen smoke, gas, carbon_monoxide und heat alle
+    unter "rauch". Die Geräteklasse in Home Assistant weiß es genauer, und
+    der Unterschied steht am Ende in der Meldung: Wer nachts geweckt wird
+    und "Rauch" liest, sucht nach dem Falschen.
+
+    Ändert nur die *Art*, nicht die Linie und nicht das Verhalten.
+    """
+    melder = store.melder()
+    if not melder:
+        return 0
+    klassen = {}
+    for eintrag in ha.zustaende(erzwingen=True):
+        klasse = eintrag.get("attributes", {}).get("device_class")
+        if klasse in ha.GEFAHR:
+            klassen[eintrag["entity_id"]] = ha.GEFAHR[klasse]
+
+    geaendert = 0
+    for eintrag in melder:
+        genauer = klassen.get(eintrag.get("entity"))
+        if genauer and eintrag.get("art") != genauer:
+            log.info("%s: Art '%s' -> '%s'", eintrag.get("entity"),
+                     eintrag.get("art"), genauer)
+            eintrag["art"] = genauer
+            geaendert += 1
+    if geaendert:
+        store.melder_setzen(melder)
+        protokoll.schreiben("betrieb",
+                            f"{geaendert} Melder genauer eingeordnet "
+                            "(Gas, Kohlenmonoxid, Hitze)")
+    return geaendert
+
+
 def _melder_aufnehmen(melder, entity_id, art, bekannt, bereiche) -> None:
     if any(m["entity"] == entity_id for m in melder):
         return
     info = bekannt.get(entity_id, {})
     melder_art = info.get("art", "sonstige")
-    if art == "rauch" or melder_art == "rauch":
+    if melder_art in ("rauch", "gas", "kohlenmonoxid", "hitze"):
+        linie = "rauch"
+    elif art == "rauch":
         linie, melder_art = "rauch", "rauch"
     elif melder_art == "wasser":
         linie = "wasser"

@@ -1,5 +1,29 @@
 # Änderungen
 
+## 1.8.0 – 18.09.2026
+
+**Kohlenmonoxid ist kein Rauch.** Bis hierher fielen `smoke`, `gas`,
+`carbon_monoxide` und `heat` alle unter die Art „Rauch“. Sie gehören auf
+dieselbe **Linie** – sie gelten rund um die Uhr und werden gleich gemeldet –,
+sind aber nicht dieselbe Gefahr: Kohlenmonoxid ist geruchlos, unsichtbar und
+brennt nicht.
+
+Der Unterschied steht am Ende in der Meldung. Wer nachts von einem
+kritischen Push geweckt wird und „Rauch“ liest, sucht nach dem Falschen.
+
+* Vier eigene Arten: **Rauch**, **Gas**, **Kohlenmonoxid**, **Hitze**.
+* Der vorgegebene Meldetext richtet sich danach: „Achtung! Wohnzimmer meldet
+  Kohlenmonoxid.“ Die Rangfolge ist jetzt: der Satz des Melders, dann der
+  **eingestellte** Satz der Stufe, dann der zur Art, zuletzt der der Linie –
+  eine eigene Einstellung wird also nicht überschrieben.
+* Eigene Titel für den Push: ☣️ Kohlenmonoxid, ☣️ Gasalarm, 🔥 Hitzealarm.
+* Der Hinweis „… sind hier nicht eingerichtet“ und der Assistent
+  unterscheiden die Arten ebenfalls.
+
+**Vorhandene Melder werden beim Start einmal genauer eingeordnet** – anhand
+der Geräteklasse in Home Assistant. Geändert wird nur die Art, nicht die
+Linie und nicht das Verhalten.
+
 ## 1.7.4 – 18.09.2026
 
 **„Einzeln ansehen“ zeigt jetzt die Einzelnen.** Der Knopf am Hinweis

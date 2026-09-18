@@ -37,6 +37,26 @@ VORGABETEXTE = {
     ("wasser", "entwarnung"): "{ort} meldet kein Wasser mehr.",
 }
 
+# Auf einer Linie liegen verwandte Gefahren, aber nicht dieselbe. Wer
+# nachts von einem kritischen Push geweckt wird und "Rauch" liest, sucht
+# nach dem Falschen, wenn es Kohlenmonoxid war - das riecht man nicht und
+# sieht man nicht. Der Satz richtet sich deshalb nach der Art des Melders,
+# solange die Stufe keinen eigenen trägt.
+ART_VORGABETEXTE = {
+    ("gas", "alarm"): "Achtung! {ort} meldet Gas.",
+    ("gas", "entwarnung"): "{ort} meldet kein Gas mehr.",
+    ("kohlenmonoxid", "alarm"): "Achtung! {ort} meldet Kohlenmonoxid.",
+    ("kohlenmonoxid", "entwarnung"): "{ort} meldet kein Kohlenmonoxid mehr.",
+    ("hitze", "alarm"): "Achtung! {ort} meldet Hitze.",
+    ("hitze", "entwarnung"): "{ort} meldet keine Hitze mehr.",
+}
+
+ART_TITEL = {
+    ("gas", "alarm"): "☣️ Gasalarm",
+    ("kohlenmonoxid", "alarm"): "☣️ Kohlenmonoxid",
+    ("hitze", "alarm"): "🔥 Hitzealarm",
+}
+
 TITEL = {
     ("einbruch", "voralarm"): "Alarmanlage: Voralarm",
     ("einbruch", "alarm"): "🚨 Alarm im Haus",
@@ -52,7 +72,8 @@ def stufe(linie: str, name: str) -> dict:
     return store.get("eskalation", linie, name, default={}) or {}
 
 
-def ausfuehren(linie: str, name: str, text_vorrang: str = "", **werte) -> dict:
+def ausfuehren(linie: str, name: str, text_vorrang: str = "",
+               art: str = "", **werte) -> dict:
     """Eine Meldestufe auslösen.
 
     ``werte`` füllt die Platzhalter im Text ({ausloeser}, {ort}, {modus},
@@ -72,9 +93,13 @@ def ausfuehren(linie: str, name: str, text_vorrang: str = "", **werte) -> dict:
     if not konfig.get("aktiv", True):
         return getan
 
+    # Rangfolge: der Satz des Melders, dann der eingestellte Satz der Stufe,
+    # dann der zur Art des Melders, zuletzt der der Linie.
     text = (text_vorrang or konfig.get("text")
+            or ART_VORGABETEXTE.get((art, name))
             or VORGABETEXTE.get((linie, name), "{ausloeser}"))
-    titel = TITEL.get((linie, name), "Alarmanlage")
+    titel = (ART_TITEL.get((art, name))
+             or TITEL.get((linie, name), "Alarmanlage"))
     try:
         text = text.format(**{"ausloeser": "", "ort": "", "modus": "",
                               "rest": "", "zeit": "", **werte})

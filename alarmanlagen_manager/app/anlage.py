@@ -431,7 +431,8 @@ class Anlage:
                             melder=melder.get("id"), linie=linie_schluessel)
         # Der eigene Text gilt nur für den Alarm. Die Entwarnung sagt, dass
         # nichts mehr anliegt - dafür taugt derselbe Satz nicht.
-        eskalation.ausfuehren(linie_schluessel, "entwarnung", ort=ort)
+        eskalation.ausfuehren(linie_schluessel, "entwarnung",
+                              art=melder.get("art", ""), ort=ort)
         if not offene:
             eskalation.zuruecknehmen(linie_schluessel, "alarm")
 
@@ -447,6 +448,7 @@ class Anlage:
                             melder=melder.get("id"), linie=linie_schluessel)
         eskalation.ausfuehren(linie_schluessel, "alarm",
                               text_vorrang=melder.get("text", ""),
+                              art=melder.get("art", ""),
                               ort=ort, ausloeser=ort,
                               zeit=time.strftime("%H:%M"))
 
