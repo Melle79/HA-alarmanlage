@@ -295,8 +295,12 @@ class Anlage:
         # geschah, weiß ohnehin niemand: Vorher stand das Schloss schon
         # auf "unlocked", nachher wieder.
         if alt in (None, "", "unavailable", "unknown"):
-            log.debug("%s: %s -> %s ist kein Aufschließen, nur eine Lücke",
-                      entity_id, alt, neu)
+            # Sichtbar, nicht still: Dass dieser Fall eintritt, war
+            # monatelang nirgends abzulesen. Wer später wissen will, ob
+            # sein Schloss Lücken hat, soll es im Log sehen.
+            log.info("%s war %s und meldet wieder %s – das ist keine "
+                     "Türöffnung, nur eine Lücke in der Anbindung",
+                     entity_id, alt, neu)
             return
 
         # Es horchen bewusst alle Schlossmeldungen zugleich. Die Quellen

@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.9.6 – 21.09.2026
+
+**Eine übergangene Lücke steht jetzt im Log.** Seit 1.9.5 zählt die
+Rückkehr eines Schlosses aus `unavailable` nicht mehr als Türöffnung –
+sie geschah dabei aber lautlos. Dass der Fall überhaupt eintritt, war
+vorher nirgends abzulesen; genau diese Stille hat den Fehler monatelang
+verdeckt. Die Anlage schreibt es jetzt hin.
+
 ## 1.9.5 – 21.09.2026
 
 **Die Nachlaufsperre hing rund um die Uhr fest.** Ein Cloud-Schloss fällt
