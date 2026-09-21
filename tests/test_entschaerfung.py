@@ -37,6 +37,36 @@ class AmSchloss(AnlagenTest):
         self.ereignis("lock.cloud", "unlocked")
         self.assertEqual(self.anlage.panel, "disarmed")
 
+    def test_rueckkehr_aus_unavailable_ist_kein_aufschliessen(self):
+        """Das Cloud-Schloss fällt aus und kommt als "unlocked" zurück.
+
+        Bei Sven geschah das nachts alle halbe Stunde: zehn Minuten
+        `unavailable`, danach wieder `unlocked`. Gezählt als Türöffnung
+        setzte jede Lücke die Nachlaufsperre neu – die Einbruchlinie war
+        rund um die Uhr unterdrückt, ohne einen Hinweis darauf.
+        """
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.cloud", "unavailable")
+        self.ereignis("lock.cloud", "unlocked")
+        self.assertEqual(self.anlage.panel, "armed_away")
+        self.assertIsNone(self.store.z_get("letzte_entsperrung"))
+
+    def test_unknown_zaehlt_ebenso_wenig(self):
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.haustuer", "unknown")
+        self.ereignis("lock.haustuer", "unlocked")
+        self.assertEqual(self.anlage.panel, "armed_away")
+
+    def test_echtes_aufschliessen_nach_einer_luecke_zaehlt(self):
+        """Nach der Lücke kommt es zurück, wird zugesperrt – und dann
+        schließt wirklich jemand auf. Das muss zählen."""
+        self.anlage.scharf_schalten("abwesend", sofort=True)
+        self.ereignis("lock.haustuer", "unavailable")
+        self.ereignis("lock.haustuer", "unlocked")
+        self.ereignis("lock.haustuer", "locked")
+        self.ereignis("lock.haustuer", "unlocked")
+        self.assertEqual(self.anlage.panel, "disarmed")
+
     def test_zusatzmelder_zaehlt_ebenfalls(self):
         self.store.set("entschaerfung", "zusatzmelder",
                        ["sensor.schlosszustand"])
@@ -135,6 +165,10 @@ class WiederScharf(AnlagenTest):
         self.store.set("entschaerfung", "schloesser", ["lock.haustuer"])
         self.store.set("entschaerfung", "wieder_scharf_minuten", 10)
         self.store.set("entschaerfung", "rueckfall_stunden", 2)
+        # Ein Schloss, das noch nie etwas gemeldet hat, gibt es nicht -
+        # und seit 1.9.5 zaehlt nur ein Wechsel aus einem bekannten
+        # Zustand heraus als Aufschliessen.
+        self.setze("lock.haustuer", "locked")
 
     def _schloss_zu_seit(self, minuten):
         self.zustaende["lock.haustuer"] = {

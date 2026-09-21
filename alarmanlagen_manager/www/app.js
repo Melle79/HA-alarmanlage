@@ -187,7 +187,12 @@ function uebersichtZeichnen() {
   if (!s.automatik) marke('Automatik aus', 'warn');
   if (!s.verbunden) marke('Keine Verbindung zu Home Assistant', 'schlecht');
   if (!Z.status.mqtt?.verbunden) marke('Kein MQTT – kein Bedienfeld', 'schlecht');
-  if (s.nachlaufsperre) marke('Nachlaufsperre aktiv');
+  const scharf = ['armed_away', 'armed_home', 'armed_night', 'armed_vacation',
+    'pending'].includes(s.panel);
+  if (s.nachlaufsperre) {
+    marke(scharf ? 'Nachlaufsperre aktiv'
+      : 'Nachlaufsperre – wirkt erst im scharfen Zustand');
+  }
   if (s.jemand_da) marke('Jemand ist zu Hause', 'gut');
   $('kopf-unter').textContent = `Fassung ${Z.status.version}`;
 

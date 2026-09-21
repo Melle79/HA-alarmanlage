@@ -32,6 +32,10 @@ const ZUSTAND = {
 
 const SKALEN = { klein: 1, normal: 1.1, gross: 1.2, riesig: 1.45 };
 
+const SCHARF = new Set(
+  ['armed_away', 'armed_home', 'armed_night', 'armed_vacation', 'pending'],
+);
+
 const VORGABE = {
   entity: 'alarm_control_panel.alarmanlage_bedienfeld',
   hausmodus_entity: 'select.alarmanlage_hausmodus',
@@ -167,7 +171,10 @@ class AlarmanlageCard extends HTMLElement {
     };
     if (a.trockenlauf) marke('Trockenlauf – es geht nichts hinaus', 'warn');
     if (a.automatik === false) marke('Automatik aus', 'warn');
-    if (a.nachlaufsperre) marke('Nachlaufsperre');
+    /* Die Nachlaufsperre unterdrueckt Einbruchmeldungen - und die gibt es
+       nur im scharfen Zustand. Auf einer entschaerften Anlage haelt sie
+       nichts auf, und die Marke waere eine Warnung ohne Gegenstand. */
+    if (a.nachlaufsperre && SCHARF.has(a.panel)) marke('Nachlaufsperre');
     if (a.verbunden === false) marke('Keine Verbindung', 'schlecht');
     for (const ort of a.offene_alarme || []) marke('Alarm: ' + ort, 'schlecht');
     if ((a.ueberbrueckt || []).length) {

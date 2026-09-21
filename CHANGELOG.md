@@ -1,5 +1,24 @@
 # Änderungen
 
+## 1.9.5 – 21.09.2026
+
+**Die Nachlaufsperre hing rund um die Uhr fest.** Ein Cloud-Schloss fällt
+regelmäßig für ein paar Minuten auf `unavailable` und kommt als `unlocked`
+zurück. Das zählte als Türöffnung – und setzte die Sperre jedes Mal neu.
+Auf einer echten Anlage geschah das nachts alle halbe Stunde: Die
+Einbruchlinie war dauerhaft unterdrückt, **ohne einen einzigen Hinweis
+darauf**.
+
+* Ein Aufschließen ist nur der Wechsel aus einem **bekannten** Zustand
+  heraus. `unavailable → unlocked` und `unknown → unlocked` zählen nicht:
+  Was in der Lücke geschah, weiß ohnehin niemand – vorher stand das Schloss
+  auf `unlocked`, nachher wieder.
+* Die Marke **„Nachlaufsperre"** erscheint auf der Karte nur noch im
+  scharfen Zustand. Sie unterdrückt Einbruchmeldungen, und die gibt es auf
+  einer entschärften Anlage nicht – die Marke war eine Warnung ohne
+  Gegenstand. In der Oberfläche steht sie weiter, dort aber mit dem Zusatz
+  „wirkt erst im scharfen Zustand".
+
 ## 1.9.4 – 18.09.2026
 
 **Die Schalter im Karten-Editor wirkten nicht.** Die Gruppe „Was die Karte

@@ -286,6 +286,19 @@ class Anlage:
         if neu != offen_wert:
             return
 
+        # Nur ein Wechsel aus einem *bekannten* Zustand heraus ist eine
+        # Türöffnung. Ein Cloud-Schloss fällt regelmäßig für ein paar
+        # Minuten auf "unavailable" und kommt als "unlocked" zurück - das
+        # ist keine Tür, das ist ein Abfragetakt. Wer das mitzählt, setzt
+        # die Nachlaufsperre rund um die Uhr neu und macht die
+        # Einbruchlinie dauerhaft blind. Was in der Lücke wirklich
+        # geschah, weiß ohnehin niemand: Vorher stand das Schloss schon
+        # auf "unlocked", nachher wieder.
+        if alt in (None, "", "unavailable", "unknown"):
+            log.debug("%s: %s -> %s ist kein Aufschließen, nur eine Lücke",
+                      entity_id, alt, neu)
+            return
+
         # Es horchen bewusst alle Schlossmeldungen zugleich. Die Quellen
         # sind sich nicht einig: Ein Cloud-Schloss hinkt hinterher oder
         # schweigt ganz, während das lokale sofort meldet. Wer sich für
